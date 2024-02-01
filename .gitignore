@@ -1,0 +1,212 @@
+# big files
+data_util/face_tracking/3DMM/01_MorphableModel.mat
+data_util/face_tracking/3DMM/3DMM_info.npy
+
+!/deep_3drecon/BFM/.gitkeep
+deep_3drecon/BFM/Exp_Pca.bin
+deep_3drecon/BFM/01_MorphableModel.mat
+deep_3drecon/BFM/BFM_model_front.mat
+deep_3drecon/network/FaceReconModel.pb
+deep_3drecon/checkpoints/*
+
+.vscode
+### Project ignore
+/checkpoints/*
+!/checkpoints/.gitkeep
+!/checkpoints/audio2motion_vae/.gitkeep
+!/checkpoints/motion2video_nerf/may_torso/.gitkeep
+/data/*
+!/data/.gitkeep
+!/data/binary/videos/May/.gitkeep
+!data/raw/videos/May.mp4
+!data/raw/val_wavs/zozo.wav
+infer_out
+rsync
+.idea
+.DS_Store
+bak
+tmp
+*.tar.gz
+mos
+nbs
+/configs_usr/*
+!/configs_usr/.gitkeep
+/egs_usr/*
+!/egs_usr/.gitkeep
+/rnnoise
+#/usr/*
+#!/usr/.gitkeep
+scripts_usr
+
+
+# Created by .ignore support plugin (hsz.mobi)
+### Python template
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+data_util/deepspeech_features/deepspeech-0.9.2-models.pbmm
+deep_3drecon/mesh_renderer/bazel-bin
+deep_3drecon/mesh_renderer/bazel-mesh_renderer
+deep_3drecon/mesh_renderer/bazel-out
+deep_3drecon/mesh_renderer/bazel-testlogs
+
+.nfs*
+infer_outs/*
+
+*.pth
+venv_113/*
+*.pt
+experiments/trials
+flame_3drecon/*
+
+temp/
+/kill.sh
+/datasets
+data_util/imagenet_classes.txt
+process_data_May.sh
+/env_prepare_reproduce.md
+/my_debug.py
+
+utils/metrics/shape_predictor_68_face_landmarks.dat
+*.mp4
+_torchshow/
+*.png
+*.jpg
+
+legacy/
+*.mrc
+checkpoints_lora/*
+checkpoints_lora_triplane/*
+
+infer_out_megatts/*
+ijcai_test_data/*
+infer_general3d_oneshot.py
+infer_general3d_person_specifc.py
+
+deep_3drecon/BFM/BFM_exp_idx.mat
+deep_3drecon/BFM/BFM_front_idx.mat
+deep_3drecon/BFM/facemodel_info.mat
+deep_3drecon/BFM/index_mp468_from_mesh35709.npy
+deep_3drecon/BFM/mediapipe_in_bfm53201.npy
+deep_3drecon/BFM/std_exp.txt

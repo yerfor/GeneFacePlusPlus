@@ -1,0 +1,10 @@
+base_config:
+  - ./base.yaml
+
+task_cls: tasks.radnerfs.radnerf.RADNeRFTask
+cond_type: esperanto
+cond_win_size: 16
+smo_win_size: 8
+cond_dropout_rate: 0.
+lambda_lap_ambient_loss: 0.
+mask_cond: false

@@ -1,0 +1,27 @@
+base_config:
+  - ./lm3d_radnerf.yaml
+
+task_cls: tasks.radnerfs.radnerf_sr.RADNeRFTask
+not_save_modules: ['criterion_lpips', 'dual_disc']
+with_sr: true
+smo_win_size: 3 # larger leads to oversmoothed lip
+
+lpips_mode: vgg19_v2 # alex | vgg19_v2 
+lambda_lpips_loss: 0.001 # alex 0.01 | vgg19_v2 0.001
+# lambda_dual_fm: 0.0001 # 0.0 will disable dual Disc and speed up the training
+lambda_dual_fm: 0.0 # 0.0 will disable dual Disc and speed up the training
+
+# Non-face reg loss for alleviate temporal jittering
+# 科学记数法不能1e-6会被yaml识别成字符串
+# May：1E-8完全不抖，1E-7女士刘海会抖不自然，1E-6抖动更加明显。但是1E-8画质相比后两者更糊一些。
+# target_ambient_loss: 3.0e-8  
+# Obama & Macron & Lieu：1E-6完全不抖，1E-8可能画质或口型会变差。长头发或者面部以外区域多变的人需要调小这个loss target为1E-8，对大多数男人1E-6就好。
+target_ambient_loss: 1.0e-8
+lr_lambda_ambient: 0.01
+lambda_ambient: # 使用target_ambient_loss后，被弃用
+ambient_loss_mode: mae # mae | mse 
+
+sr_start_iters: 0_0000
+lpips_start_iters: 20_0000
+max_updates: 25_0000
+num_ckpt_keep: 1

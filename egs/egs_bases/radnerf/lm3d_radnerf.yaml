@@ -1,0 +1,12 @@
+base_config:
+  - ./base.yaml
+
+task_cls: tasks.radnerfs.radnerf.RADNeRFTask
+cond_type: idexp_lm3d_normalized
+cond_win_size: 1
+smo_win_size: 5
+lambda_lap_ambient_loss: 0.
+cond_dropout_rate: 0.
+zero_dummy: true
+
+ambient_coord_dim: 3

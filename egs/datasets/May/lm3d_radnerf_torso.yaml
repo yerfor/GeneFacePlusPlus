@@ -1,0 +1,25 @@
+base_config:
+  - egs/egs_bases/radnerf/lm3d_radnerf.yaml
+
+video_id: May # the video file should be located at `data/raw/videos/<video_id>.mp4`
+task_cls: tasks.radnerfs.radnerf_torso.RADNeRFTorsoTask
+head_model_dir: checkpoints/May/lm3d_radnerf
+
+torso_train_mode: 1
+
+amp: true
+nerf_keypoint_mode: lm68 # lm68 | lm131 | lm468
+cond_out_dim: 64
+cond_dropout_rate: 0.
+individual_embedding_dim: 4 # 32
+hidden_dim_sigma: 128 # 64 by radnerf is too small
+geo_feat_dim: 128 # 64 by radnerf is too small
+num_layers_color: 2 # 2
+hidden_dim_color: 128 # 64 by radnerf is too small
+num_layers_ambient: 3 # 3
+hidden_dim_ambient: 128 # 64 by radnerf is too small
+lambda_ambient: 1. 
+polygon_face_mask: true
+n_rays: 65536 # 262144 # 65536 # num rays sampled per image for each training step, default 256*256
+clip_grad_norm: 0. # 1. in fp16 leads to nan
+
