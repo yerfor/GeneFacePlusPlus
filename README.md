@@ -13,9 +13,9 @@ This is the official implementation of GeneFace++ [Paper](https://arxiv.org/abs/
 </p>
 
 ## Quick Start!
-We provide a quick guide to try GeneFace++ here.
+We provide a guide for a quick start in GeneFace++.
 
-- Step 1: Follow the steps in `docs/prepare_env/install_guide.md`, create a new python environment named `geneface`, and download 3DMM features we need.
+- Step 1: Follow the steps in `docs/prepare_env/install_guide.md`, create a new python environment named `geneface`, and download 3DMM files into `deep_3drecib/BFM`.
 
 - Step 2: Download pre-processed dataset of May([Google Drive](https://drive.google.com/drive/folders/1SwZ7uRa5ESzzq_Cd21-Lk5heAZxa9oZO?usp=sharing) or [BaiduYun Disk](https://pan.baidu.com/s/1zR914cBQcGOAl4o4XInBNw?pwd=e1a3) with password e1a3), and place it here `data/binary/videos/May/trainval_dataset.npy`
 
