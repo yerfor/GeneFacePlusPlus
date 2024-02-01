@@ -1,8 +1,6 @@
 # GeneFace++: Generalized and Stable Real-Time 3D Talking Face Generation
 
-[![arXiv](https://img.shields.io/badge/arXiv-Paper-%3CCOLOR%3E.svg)](https://arxiv.org/abs/2305.00787)| [![GitHub Stars](https://img.shields.io/github/stars/yerfor/GeneFacePlusPlus)](https://github.com/yerfor/GeneFacePlusPlus) | [![downloads](https://img.shields.io/github/downloads/yerfor/GeneFacePlusPlus/total.svg)](https://github.com/yerfor/GeneFacePlusPlus/releases) | ![visitors](https://visitor-badge.glitch.me/badge?page_id=yerfor/GeneFacePlusPlus)
-
-[中文文档](./README-zh.md)
+[![arXiv](https://img.shields.io/badge/arXiv-Paper-%3CCOLOR%3E.svg)](https://arxiv.org/abs/2305.00787)| [![GitHub Stars](https://img.shields.io/github/stars/yerfor/GeneFacePlusPlus)](https://github.com/yerfor/GeneFacePlusPlus) | [中文文档](./README-zh.md)
 
 This is the official implementation of GeneFace++ [Paper](https://arxiv.org/abs/2301.13430) with Pytorch，which enables high lip-sync, high video-reality and high system-efficiency 3D talking face generation. You can visit our [Demo Page](https://genefaceplusplus.github.io/) to watch demo videos and learn more details.
 
