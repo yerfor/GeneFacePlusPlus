@@ -36,7 +36,14 @@ After these steps，your directories `checkpoints` and `data` should be like thi
                 trainval_dataset.npy
 ```
 
-- Step 4: activate `geneface` Python environment, and execute: `python inference/genefacepp_infer.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso --drv_aud=data/raw/val_wavs/MacronSpeech.wav --out_name=may_demo.mp4` ; Or you can play with our Gradio WebUI: `python inference/app_genefacepp.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso`
+- Step 4: activate `geneface` Python environment, and execute: 
+```bash
+python inference/genefacepp_infer.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso --drv_aud=data/raw/val_wavs/MacronSpeech.wav --out_name=may_demo.mp4
+```
+Or you can play with our Gradio WebUI: 
+```bash
+python inference/app_genefacepp.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso
+```
 
 ## Train GeneFace++ with your own videos
 Please refer to details in  `docs/process_data` and `docs/train_and_infer`.
