@@ -507,6 +507,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--a2m_ckpt", default='checkpoints/audio2motion_vae')  # checkpoints/0727_audio2secc/audio2secc_withlm2d100_randomframe
     parser.add_argument("--head_ckpt", default='') 
+    parser.add_argument("--postnet_ckpt", default='') 
     parser.add_argument("--torso_ckpt", default='checkpoints/motion2video_nerf/may_torso')
     parser.add_argument("--drv_aud", default='data/raw/val_wavs/MacronSpeech.wav')
     parser.add_argument("--drv_pose", default='nearest', help="目前仅支持源视频的pose,包括从头开始和指定区间两种,暂时不支持in-the-wild的pose")
