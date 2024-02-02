@@ -36,10 +36,12 @@ After these steps，your directories `checkpoints` and `data` should be like thi
 
 - Step 4: activate `geneface` Python environment, and execute: 
 ```bash
+export PYTHONPATH=./
 python inference/genefacepp_infer.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso --drv_aud=data/raw/val_wavs/MacronSpeech.wav --out_name=may_demo.mp4
 ```
 Or you can play with our Gradio WebUI: 
 ```bash
+export PYTHONPATH=./
 python inference/app_genefacepp.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso
 ```
 
