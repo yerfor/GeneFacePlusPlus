@@ -133,14 +133,18 @@ def extract_background(img_lst, segmap_lst=None):
 
 
 global_segmenter = None
-def job_cal_seg_map_for_image(segmenter_options, img):
+def job_cal_seg_map_for_image(img, segmenter_options=None, segmenter=None):
     """
     被 MediapipeSegmenter.multiprocess_cal_seg_map_for_a_video所使用, 专门用来处理单个长视频.
     """
     global global_segmenter
-    global_segmenter = vision.ImageSegmenter.create_from_options(segmenter_options) if global_segmenter is None else global_segmenter
+    if segmenter is not None:
+        segmenter_actual = segmenter
+    else:
+        global_segmenter = vision.ImageSegmenter.create_from_options(segmenter_options) if global_segmenter is None else global_segmenter
+        segmenter_actual = global_segmenter
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
-    out = global_segmenter.segment(mp_image)
+    out = segmenter_actual.segment(mp_image)
     segmap = out.category_mask.numpy_view().copy() # [H, W]
 
     segmap_mask = scatter_np(segmap[None, None, ...], classSeg=6)[0] # [6, H, W]
@@ -148,7 +152,6 @@ def job_cal_seg_map_for_image(segmenter_options, img):
     segmap_image = (segmap_image * 40).astype(np.uint8)
 
     return segmap_mask, segmap_image
-
 
 class MediapipeSegmenter:
     def __init__(self):
@@ -177,22 +180,16 @@ class MediapipeSegmenter:
             segmap_images.append(segmap_image)
         return segmap_masks, segmap_images
         
-    def _cal_seg_map_for_video(self, imgs, segmenter=None, return_onehot_mask=True, return_segmap_image=True, debug_fill=False):
+    def _cal_seg_map_for_video(self, imgs, segmenter=None, return_onehot_mask=True, return_segmap_image=True):
         segmenter = vision.ImageSegmenter.create_from_options(self.video_options) if segmenter is None else segmenter
         assert return_onehot_mask or return_segmap_image # you should at least return one
         segmap_masks = []
         segmap_images = []
         for i in tqdm.trange(len(imgs), desc="extracting segmaps from a video..."):
-        # for i in range(len(imgs)):
             img = imgs[i]
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
             out = segmenter.segment_for_video(mp_image, 40 * i)
             segmap = out.category_mask.numpy_view().copy() # [H, W]
-            if debug_fill:
-                # print(f'segmap {segmap}')
-                for x in range(-80 + 1, 0):
-                    for y in range(200, 350):
-                        segmap[x][y] = 4
 
             if return_onehot_mask:
                 segmap_mask = scatter_np(segmap[None, None, ...], classSeg=6)[0] # [6, H, W]

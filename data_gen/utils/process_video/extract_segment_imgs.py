@@ -5,19 +5,17 @@ import glob
 import cv2
 import tqdm
 import numpy as np
-import PIL
+from typing import Union
 from utils.commons.tensor_utils import convert_to_np
 from utils.commons.os_utils import multiprocess_glob
 import pickle
-import torch
-import mediapipe as mp
 import traceback
 import multiprocessing
 from utils.commons.multiprocess_utils import multiprocess_run_tqdm
 from scipy.ndimage import binary_erosion, binary_dilation
 from sklearn.neighbors import NearestNeighbors
 from mediapipe.tasks.python import vision
-from data_gen.utils.mp_feature_extractors.mp_segmenter import MediapipeSegmenter, encode_segmap_mask_to_image, decode_segmap_mask_from_image
+from data_gen.utils.mp_feature_extractors.mp_segmenter import MediapipeSegmenter, encode_segmap_mask_to_image, decode_segmap_mask_from_image, job_cal_seg_map_for_image
 
 seg_model   = None
 segmenter   = None
@@ -29,9 +27,6 @@ from data_gen.utils.process_video.split_video_to_imgs import extract_img_job
 
 BG_NAME_MAP = {
     "knn": "",
-    "mat": "_mat",
-    "ddnm": "_ddnm",
-    "lama": "_lama",
 }
 FRAME_SELECT_INTERVAL = 5
 SIM_METHOD = "mse"
@@ -68,9 +63,8 @@ def image_similarity(x: np.ndarray, y: np.ndarray, method="mse"):
 def extract_background(img_lst, segmap_mask_lst=None, method="knn", device='cpu', mix_bg=True):
     """
     img_lst: list of rgb ndarray
-    method: "knn", "mat" or "ddnm"
+    method: "knn"
     """
-    # only use 1/20 images
     global segmenter
     global seg_model
     global mat_model
@@ -88,9 +82,9 @@ def extract_background(img_lst, segmap_mask_lst=None, method="knn", device='cpu'
         
     def get_segmap_mask(img_lst, segmap_mask_lst, index):
         if segmap_mask_lst is not None:
-            segmap = segmap_mask_lst[index]
+            segmap = refresh_segment_mask(segmap_mask_lst[index])
         else:
-            segmap = seg_model._cal_seg_map(img_lst[index], segmenter=segmenter)
+            segmap = seg_model._cal_seg_map(refresh_image(img_lst[index]), segmenter=segmenter)
         return segmap
         
     if method == "knn":
@@ -100,7 +94,7 @@ def extract_background(img_lst, segmap_mask_lst=None, method="knn", device='cpu'
         elif num_frames < 10000:
             FRAME_SELECT_INTERVAL = 20
         else:
-            FRAME_SELECT_INTERVAL = num_frames % 500
+            FRAME_SELECT_INTERVAL = num_frames // 500
 
         img_lst = img_lst[::FRAME_SELECT_INTERVAL] if num_frames > FRAME_SELECT_INTERVAL else img_lst[0:1]
             
@@ -108,12 +102,12 @@ def extract_background(img_lst, segmap_mask_lst=None, method="knn", device='cpu'
             segmap_mask_lst = segmap_mask_lst[::FRAME_SELECT_INTERVAL] if num_frames > FRAME_SELECT_INTERVAL else segmap_mask_lst[0:1]
             assert len(img_lst) == len(segmap_mask_lst)
         # get H/W
-        h, w = img_lst[0].shape[:2]
+        h, w = refresh_image(img_lst[0]).shape[:2]
 
         # nearest neighbors
         all_xys = np.mgrid[0:h, 0:w].reshape(2, -1).transpose() # [512*512, 2] coordinate grid
         distss = []
-        for idx, img in enumerate(img_lst):
+        for idx, img in tqdm.tqdm(enumerate(img_lst), desc='combining backgrounds...'):
             segmap = get_segmap_mask(img_lst=img_lst, segmap_mask_lst=segmap_mask_lst, index=idx)
             bg = (segmap[0]).astype(bool) # [h,w] bool mask
             fg_xys = np.stack(np.nonzero(~bg)).transpose(1, 0) # [N_nonbg,2] coordinate of non-bg pixels
@@ -129,10 +123,12 @@ def extract_background(img_lst, segmap_mask_lst=None, method="knn", device='cpu'
         bc_pixs_id = np.nonzero(bc_pixs)
         bc_ids = max_id[bc_pixs]
 
+        # TODO: maybe we should reimplement here to avoid memory costs?
+        # though there is upper limits of images here
         num_pixs = distss.shape[1]
-        imgs = np.stack(img_lst).reshape(-1, num_pixs, 3)
-
         bg_img = np.zeros((h*w, 3), dtype=np.uint8)
+        img_lst = [refresh_image(img) for img in img_lst] 
+        imgs = np.stack(img_lst).reshape(-1, num_pixs, 3) 
         bg_img[bc_pixs_id, :] = imgs[bc_ids, bc_pixs_id, :] # 对那些铁bg的pixel，直接去对应的image里面采样
         bg_img = bg_img.reshape(h, w, 3)
 
@@ -242,8 +238,25 @@ def inpaint_torso_job(gt_img, segmap):
 
     return torso_img, torso_img_mask, torso_with_bg_img, torso_with_bg_img_mask
 
+def load_segment_mask_from_file(filename: str):
+    encoded_segmap = load_rgb_image_to_path(filename)
+    segmap_mask = decode_segmap_mask_from_image(encoded_segmap)
+    return segmap_mask
+
+# load segment mask to memory if not loaded yet
+def refresh_segment_mask(segmap_mask: Union[str, np.ndarray]):
+    if isinstance(segmap_mask, str):
+        segmap_mask = load_segment_mask_from_file(segmap_mask)
+    return segmap_mask
+
+# load segment mask to memory if not loaded yet
+def refresh_image(image: Union[str, np.ndarray]):
+    if isinstance(image, str):
+        image = load_rgb_image_to_path(image)
+    return image
+
 def generate_segment_imgs_job(img_name, segmap, img):
-    out_img_name = img_name.replace("/gt_imgs/", "/segmaps/").replace(".jpg", ".png") # 存成jpg的话，pixel value会有误差
+    out_img_name = segmap_name = img_name.replace("/gt_imgs/", "/segmaps/").replace(".jpg", ".png") # 存成jpg的话，pixel value会有误差
     try: os.makedirs(os.path.dirname(out_img_name), exist_ok=True)
     except: pass
     encoded_segmap = encode_segmap_mask_to_image(segmap)
@@ -262,14 +275,35 @@ def generate_segment_imgs_job(img_name, segmap, img):
     img_alpha[~inpaint_torso_img_mask[..., None]] = 0
     out_img_name = img_name.replace("/gt_imgs/", f"/inpaint_torso_imgs/").replace(".jpg", ".png")
     save_rgb_alpha_image_to_path(inpaint_torso_img, img_alpha, out_img_name)
+    return segmap_name
     
-def extract_segment_job(video_name, nerf=False, idx=None, total=None, background_method='knn', device="cpu", total_gpus=0, mix_bg=True):
+def segment_and_generate_for_image_job(img_name, img, segmenter_options=None, segmenter=None, store_in_memory=False):
+    img = refresh_image(img)
+    segmap_mask, segmap_image = job_cal_seg_map_for_image(img, segmenter_options=segmenter_options, segmenter=segmenter)
+    segmap_name = generate_segment_imgs_job(img_name=img_name, segmap=segmap_mask, img=img)
+    if store_in_memory:
+        return segmap_mask
+    else:
+        return segmap_name
+    
+def extract_segment_job(
+    video_name, 
+    nerf=False, 
+    background_method='knn', 
+    device="cpu",
+    total_gpus=0, 
+    mix_bg=True,
+    store_in_memory=False, # set to True to speed up a bit of preprocess, but leads to HUGE memory costs (100GB for 5-min video)
+    force_single_process=False, # turn this on if you find multi-process does not work on your environment
+):
     global segmenter
     global seg_model
     del segmenter
     del seg_model
     seg_model = MediapipeSegmenter()
-    segmenter = vision.ImageSegmenter.create_from_options(seg_model.video_options)
+    segmenter = vision.ImageSegmenter.create_from_options(seg_model.options)
+    # nerf means that we extract only one video, so can enable multi-process acceleration
+    multiprocess_enable = nerf and not force_single_process 
     try:
         if "cuda" in device:
             # determine which cuda index from subprocess id
@@ -290,46 +324,37 @@ def extract_segment_job(video_name, nerf=False, idx=None, total=None, background
         img_lst = []
 
         for img_name in img_names:
-            img = cv2.imread(img_name)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            if store_in_memory:
+                img = load_rgb_image_to_path(img_name)
+            else:
+                img = img_name
             img_lst.append(img)
 
-        print("| Extracting Segmaps...")
-        if nerf: # means that we extract only one video, so can enable multi-process acceleration 
-            segmap_mask_lst, segmap_image_lst = seg_model.multiprocess_cal_seg_map_for_a_video(img_lst, num_workers=8)
-        else:
-            segmap_mask_lst, segmap_image_lst = seg_model._cal_seg_map_for_video(img_lst, segmenter=segmenter, return_onehot_mask=True, return_segmap_image=True)
-        del segmap_image_lst
-        print("| Extracted Segmaps Done.")
-
-        if nerf: # means that we extract only one video, so can enable multi-process acceleration 
-            args = [(img_names[i], segmap_mask_lst[i], img_lst[i]) for i in range(len(img_lst))]
-            for (_, res) in multiprocess_run_tqdm(generate_segment_imgs_job, args=args, num_workers=16, desc='generating segment images using segmaps in multi-process...'):
-                pass
-        else:
-            for i in tqdm.trange(len(img_lst), desc='generating segment images using segmaps...'):
-                img_name = img_names[i]
-                segmap = segmap_mask_lst[i]
-                img = img_lst[i]
-                out_img_name = img_name.replace("/gt_imgs/", "/segmaps/").replace(".jpg", ".png") # 存成jpg的话，pixel value会有误差
-                try: os.makedirs(os.path.dirname(out_img_name), exist_ok=True)
-                except: pass
-                encoded_segmap = encode_segmap_mask_to_image(segmap)
-                save_rgb_image_to_path(encoded_segmap, out_img_name)
+        print("| Extracting Segmaps && Saving...")
+        args = []
+        segmap_mask_lst = []
+        # preparing parameters for segment
+        for i in range(len(img_lst)):
+            img_name = img_names[i]
+            img = img_lst[i]
+            if multiprocess_enable: # create seg_model in subprocesses here
+                options = seg_model.options
+                segmenter_arg = None
+            else: # use seg_model of this process
+                options = None
+                segmenter_arg = segmenter
+            arg = (img_name, img, options, segmenter_arg, store_in_memory)
+            args.append(arg)
             
-                for mode in ['head', 'torso', 'person', 'bg']:
-                    out_img, mask = seg_model._seg_out_img_with_segmap(img, segmap, mode=mode)
-                    img_alpha = 255 * np.ones((img.shape[0], img.shape[1], 1), dtype=np.uint8) # alpha
-                    mask = mask[0][..., None]
-                    img_alpha[~mask] = 0
-                    out_img_name = img_name.replace("/gt_imgs/", f"/{mode}_imgs/").replace(".jpg", ".png")
-                    save_rgb_alpha_image_to_path(out_img, img_alpha, out_img_name)
-                
-                inpaint_torso_img, inpaint_torso_img_mask, inpaint_torso_with_bg_img, inpaint_torso_with_bg_img_mask = inpaint_torso_job(img, segmap)
-                img_alpha = 255 * np.ones((img.shape[0], img.shape[1], 1), dtype=np.uint8) # alpha
-                img_alpha[~inpaint_torso_img_mask[..., None]] = 0
-                out_img_name = img_name.replace("/gt_imgs/", f"/inpaint_torso_imgs/").replace(".jpg", ".png")
-                save_rgb_alpha_image_to_path(inpaint_torso_img, img_alpha, out_img_name)
+        if multiprocess_enable:
+            for (_, res) in multiprocess_run_tqdm(segment_and_generate_for_image_job, args=args, num_workers=16, desc='generating segment images in multi-processes...'):
+                segmap_mask = res
+                segmap_mask_lst.append(segmap_mask)
+        else:
+            for index in tqdm.tqdm(range(len(img_lst)), desc="generating segment images in single-process..."):
+                segmap_mask = segment_and_generate_for_image_job(*args[index])
+                segmap_mask_lst.append(segmap_mask)
+        print("| Extracted Segmaps Done.")
         
         print("| Extracting background...")
         bg_prefix_name = f"bg{BG_NAME_MAP[background_method]}"
@@ -345,8 +370,8 @@ def extract_segment_job(video_name, nerf=False, idx=None, total=None, background
         com_prefix_name = f"com{BG_NAME_MAP[background_method]}"
         for i in tqdm.trange(len(img_names), desc='extracting com_imgs'):
             img_name = img_names[i]
-            com_img = img_lst[i].copy()
-            segmap = segmap_mask_lst[i]
+            com_img = refresh_image(img_lst[i]).copy()
+            segmap = refresh_segment_mask(segmap_mask_lst[i])
             bg_part = segmap[0].astype(bool)[..., None].repeat(3,axis=-1)
             com_img[bg_part] = bg_img[bg_part]
             out_img_name = img_name.replace("/gt_imgs/", f"/{com_prefix_name}_imgs/")
@@ -359,100 +384,26 @@ def extract_segment_job(video_name, nerf=False, idx=None, total=None, background
         traceback.print_exc(e)
         return 1
 
-# def check_bg_img_job_finished(raw_img_dir, bg_name, com_dir):
-#     img_names = glob.glob(os.path.join(raw_img_dir, "*.jpg"))
-#     com_names = glob.glob(os.path.join(com_dir, "*.jpg"))
-#     return len(img_names) == len(com_names) and os.path.exists(bg_name)
-
-# extract background and combined image
-# need pre-processed "gt_imgs" and "segmaps"
-def extract_bg_img_job(video_name, nerf=False, idx=None, total=None, background_method='knn', device="cpu", total_gpus=0, mix_bg=True):
-    try:
-        bg_prefix_name = f"bg{BG_NAME_MAP[background_method]}"
-        com_prefix_name = f"com{BG_NAME_MAP[background_method]}"
-        
-        if "cuda" in device:
-            # determine which cuda index from subprocess id
-            pname = multiprocessing.current_process().name
-            pid = int(pname.rsplit("-", 1)[-1]) - 1
-            cuda_id = pid % total_gpus
-            device = f"cuda:{cuda_id}"
-            
-        if nerf: # single video
-            raw_img_dir = video_name.replace(".mp4", "/gt_imgs/").replace("/raw/","/processed/")
-        else: # whole dataset
-            raw_img_dir = video_name.replace(".mp4", "").replace("/video/", "/gt_imgs/")
-        if nerf:
-            bg_name = video_name.replace("/raw/", "/processed/").replace(".mp4", f"/{bg_prefix_name}.jpg")
-        else:
-            bg_name = video_name.replace("/video/", f"/{bg_prefix_name}_img/").replace(".mp4", ".jpg")
-        # com_dir = raw_img_dir.replace("/gt_imgs/", f"/{com_prefix_name}_imgs/")
-        # if check_bg_img_job_finished(raw_img_dir=raw_img_dir, bg_name=bg_name, com_dir=com_dir):
-        #     print(f"Already finished, skip {raw_img_dir} ")
-        #     return 0
-        
-        img_names = glob.glob(os.path.join(raw_img_dir, "*.jpg"))
-        img_lst = []
-        for img_name in img_names:
-            img = cv2.imread(img_name)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img_lst.append(img)
-            
-        segmap_mask_lst = []
-        for img_name in img_names:
-            segmap_img_name = img_name.replace("/gt_imgs/", "/segmaps/").replace(".jpg", ".png")
-            segmap_img = load_rgb_image_to_path(segmap_img_name)
-            
-            segmap_mask = decode_segmap_mask_from_image(segmap_img)
-            segmap_mask_lst.append(segmap_mask)
-            
-        bg_img = extract_background(img_lst, segmap_mask_lst, method=background_method, device=device, mix_bg=mix_bg)
-        save_rgb_image_to_path(bg_img, bg_name)
-        
-        for i, img_name in enumerate(img_names):
-            com_img = img_lst[i].copy()
-            segmap = segmap_mask_lst[i]
-            bg_part = segmap[0].astype(bool)[..., None].repeat(3, axis=-1)
-            com_img[bg_part] = bg_img[bg_part]
-            com_name = img_name.replace("/gt_imgs/", f"/{com_prefix_name}_imgs/")
-            save_rgb_image_to_path(com_img, com_name)
-        return 0
-    
-    except Exception as e:
-        print(str(type(e)), e)
-        traceback.print_exc(e)
-        return 1
-
-def out_exist_job(vid_name, background_method='knn', only_bg_img=False):
+def out_exist_job(vid_name, background_method='knn'):
     com_prefix_name = f"com{BG_NAME_MAP[background_method]}"
     img_dir = vid_name.replace("/video/", "/gt_imgs/").replace(".mp4", "")
     out_dir1 = img_dir.replace("/gt_imgs/", "/head_imgs/")
     out_dir2 = img_dir.replace("/gt_imgs/", f"/{com_prefix_name}_imgs/")
     
-    if not only_bg_img:
-        if os.path.exists(img_dir) and os.path.exists(out_dir1) and os.path.exists(out_dir1) and os.path.exists(out_dir2) :
-            num_frames = len(os.listdir(img_dir))
-            if len(os.listdir(out_dir1)) == num_frames and len(os.listdir(out_dir2)) == num_frames:
-                return None
-            else:
-                return vid_name
+    if os.path.exists(img_dir) and os.path.exists(out_dir1) and os.path.exists(out_dir1) and os.path.exists(out_dir2) :
+        num_frames = len(os.listdir(img_dir))
+        if len(os.listdir(out_dir1)) == num_frames and len(os.listdir(out_dir2)) == num_frames:
+            return None
         else:
             return vid_name
     else:
-        if os.path.exists(img_dir) and os.path.exists(out_dir2):
-            num_frames = len(os.listdir(img_dir))
-            if len(os.listdir(out_dir2)) == num_frames:
-                return None
-            else:
-                return vid_name
-        else:
-            return vid_name
+        return vid_name
 
-def get_todo_vid_names(vid_names, background_method='knn', only_bg_img=False):
+def get_todo_vid_names(vid_names, background_method='knn'):
     if len(vid_names) == 1: # nerf
         return vid_names
     todo_vid_names = []
-    fn_args = [(vid_name, background_method, only_bg_img) for vid_name in vid_names]
+    fn_args = [(vid_name, background_method) for vid_name in vid_names]
     for i, res in multiprocess_run_tqdm(out_exist_job, fn_args, num_workers=16, desc="checking todo videos..."):
         if res is not None:
             todo_vid_names.append(res)
@@ -471,8 +422,9 @@ if __name__ == '__main__':
     parser.add_argument("--load_names", action="store_true")
     parser.add_argument("--background_method", choices=['knn', 'mat', 'ddnm', 'lama'], type=str, default='knn')
     parser.add_argument("--total_gpus", default=0, type=int) # zero gpus means utilizing cpu
-    parser.add_argument("--only_bg_img", action="store_true")
     parser.add_argument("--no_mix_bg", action="store_true")
+    parser.add_argument("--store_in_memory", action="store_true") # set to True to speed up preprocess, but leads to high memory costs
+    parser.add_argument("--force_single_process", action="store_true") # turn this on if you find multi-process does not work on your environment
 
     args = parser.parse_args()
     vid_dir = args.vid_dir
@@ -480,8 +432,9 @@ if __name__ == '__main__':
     load_names = args.load_names
     background_method = args.background_method
     total_gpus = args.total_gpus
-    only_bg_img = args.only_bg_img
     mix_bg = not args.no_mix_bg
+    store_in_memory = args.store_in_memory
+    force_single_process = args.force_single_process
 
     devices = os.environ.get('CUDA_VISIBLE_DEVICES', '').split(",")
     for d in devices[:total_gpus]:
@@ -527,20 +480,15 @@ if __name__ == '__main__':
             vid_names = vid_names[process_id * num_samples_per_process : (process_id+1) * num_samples_per_process]
     
     if not args.reset:
-        vid_names = get_todo_vid_names(vid_names, background_method, only_bg_img)
+        vid_names = get_todo_vid_names(vid_names, background_method)
     print(f"todo videos number: {len(vid_names)}")
-    # exit()
 
     device = "cuda" if total_gpus > 0 else "cpu"
-    if only_bg_img:
-        extract_job = extract_bg_img_job
-        fn_args = [(vid_name,ds_name=='nerf',i,len(vid_names), background_method, device, total_gpus, mix_bg) for i, vid_name in enumerate(vid_names)]
-    else:
-        extract_job = extract_segment_job
-        fn_args = [(vid_name,ds_name=='nerf',i,len(vid_names), background_method, device, total_gpus, mix_bg) for i, vid_name in enumerate(vid_names)]
+    extract_job = extract_segment_job
+    fn_args = [(vid_name, ds_name=='nerf', background_method, device, total_gpus, mix_bg, store_in_memory, force_single_process) for i, vid_name in enumerate(vid_names)]
         
     if ds_name == 'nerf': # 处理单个视频
-        extract_job(vid_names[0], nerf=True)
+        extract_job(*fn_args[0])
     else:
         for vid_name in multiprocess_run_tqdm(extract_job, fn_args, desc=f"Root process {args.process_id}:  segment images", num_workers=args.num_workers):
             pass

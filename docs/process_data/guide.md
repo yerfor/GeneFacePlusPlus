@@ -19,6 +19,7 @@ python data_gen/utils/process_audio/extract_mel_f0.py --video_id=${VIDEO_ID}
 ```
 
 # Step2. Extract images
+TIPS: add `--force_single_process` if you discover that multiprocessing does not work well with Mediapipe
 ```
 export VIDEO_ID=May
 export CUDA_VISIBLE_DEVICES=0
