@@ -132,6 +132,24 @@ def extract_background(img_lst, segmap_lst=None):
     return bg_img
 
 
+global_segmenter = None
+def job_cal_seg_map_for_image(segmenter_options, img):
+    """
+    被 MediapipeSegmenter.multiprocess_cal_seg_map_for_a_video所使用, 专门用来处理单个长视频.
+    """
+    global global_segmenter
+    global_segmenter = vision.ImageSegmenter.create_from_options(segmenter_options) if global_segmenter is None else global_segmenter
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
+    out = global_segmenter.segment(mp_image)
+    segmap = out.category_mask.numpy_view().copy() # [H, W]
+
+    segmap_mask = scatter_np(segmap[None, None, ...], classSeg=6)[0] # [6, H, W]
+    segmap_image = segmap[:, :, None].repeat(3, 2).astype(float)
+    segmap_image = (segmap_image * 40).astype(np.uint8)
+
+    return segmap_mask, segmap_image
+
+
 class MediapipeSegmenter:
     def __init__(self):
         model_path = 'data_gen/utils/mp_feature_extractors/selfie_multiclass_256x256.tflite'
@@ -145,6 +163,20 @@ class MediapipeSegmenter:
         self.options = vision.ImageSegmenterOptions(base_options=base_options,running_mode=vision.RunningMode.IMAGE, output_category_mask=True)
         self.video_options = vision.ImageSegmenterOptions(base_options=base_options,running_mode=vision.RunningMode.VIDEO, output_category_mask=True)
     
+    def multiprocess_cal_seg_map_for_a_video(self, imgs, num_workers=4):
+        """
+        并行处理单个长视频
+        imgs: list of rgb array in 0~255
+        """
+        segmap_masks = []
+        segmap_images = []
+        img_lst = [(self.options, imgs[i]) for i in range(len(imgs))]
+        for (i, res) in multiprocess_run_tqdm(job_cal_seg_map_for_image, args=img_lst, num_workers=num_workers, desc='extracting from a video in multi-process'):
+            segmap_mask, segmap_image = res
+            segmap_masks.append(segmap_mask)
+            segmap_images.append(segmap_image)
+        return segmap_masks, segmap_images
+        
     def _cal_seg_map_for_video(self, imgs, segmenter=None, return_onehot_mask=True, return_segmap_image=True, debug_fill=False):
         segmenter = vision.ImageSegmenter.create_from_options(self.video_options) if segmenter is None else segmenter
         assert return_onehot_mask or return_segmap_image # you should at least return one

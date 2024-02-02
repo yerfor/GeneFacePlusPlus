@@ -95,6 +95,13 @@ def extract_background(img_lst, segmap_mask_lst=None, method="knn", device='cpu'
         
     if method == "knn":
         num_frames = len(img_lst)
+        if num_frames < 100:
+            FRAME_SELECT_INTERVAL = 5
+        elif num_frames < 10000:
+            FRAME_SELECT_INTERVAL = 20
+        else:
+            FRAME_SELECT_INTERVAL = num_frames % 500
+
         img_lst = img_lst[::FRAME_SELECT_INTERVAL] if num_frames > FRAME_SELECT_INTERVAL else img_lst[0:1]
             
         if segmap_mask_lst is not None:
@@ -235,7 +242,27 @@ def inpaint_torso_job(gt_img, segmap):
 
     return torso_img, torso_img_mask, torso_with_bg_img, torso_with_bg_img_mask
 
+def generate_segment_imgs_job(img_name, segmap, img):
+    out_img_name = img_name.replace("/gt_imgs/", "/segmaps/").replace(".jpg", ".png") # 存成jpg的话，pixel value会有误差
+    try: os.makedirs(os.path.dirname(out_img_name), exist_ok=True)
+    except: pass
+    encoded_segmap = encode_segmap_mask_to_image(segmap)
+    save_rgb_image_to_path(encoded_segmap, out_img_name)
 
+    for mode in ['head', 'torso', 'person', 'bg']:
+        out_img, mask = seg_model._seg_out_img_with_segmap(img, segmap, mode=mode)
+        img_alpha = 255 * np.ones((img.shape[0], img.shape[1], 1), dtype=np.uint8) # alpha
+        mask = mask[0][..., None]
+        img_alpha[~mask] = 0
+        out_img_name = img_name.replace("/gt_imgs/", f"/{mode}_imgs/").replace(".jpg", ".png")
+        save_rgb_alpha_image_to_path(out_img, img_alpha, out_img_name)
+    
+    inpaint_torso_img, inpaint_torso_img_mask, inpaint_torso_with_bg_img, inpaint_torso_with_bg_img_mask = inpaint_torso_job(img, segmap)
+    img_alpha = 255 * np.ones((img.shape[0], img.shape[1], 1), dtype=np.uint8) # alpha
+    img_alpha[~inpaint_torso_img_mask[..., None]] = 0
+    out_img_name = img_name.replace("/gt_imgs/", f"/inpaint_torso_imgs/").replace(".jpg", ".png")
+    save_rgb_alpha_image_to_path(inpaint_torso_img, img_alpha, out_img_name)
+    
 def extract_segment_job(video_name, nerf=False, idx=None, total=None, background_method='knn', device="cpu", total_gpus=0, mix_bg=True):
     global segmenter
     global seg_model
@@ -267,33 +294,44 @@ def extract_segment_job(video_name, nerf=False, idx=None, total=None, background
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img_lst.append(img)
 
-        segmap_mask_lst, segmap_image_lst = seg_model._cal_seg_map_for_video(img_lst, segmenter=segmenter, return_onehot_mask=True, return_segmap_image=True)
+        print("| Extracting Segmaps...")
+        if nerf: # means that we extract only one video, so can enable multi-process acceleration 
+            segmap_mask_lst, segmap_image_lst = seg_model.multiprocess_cal_seg_map_for_a_video(img_lst, num_workers=8)
+        else:
+            segmap_mask_lst, segmap_image_lst = seg_model._cal_seg_map_for_video(img_lst, segmenter=segmenter, return_onehot_mask=True, return_segmap_image=True)
         del segmap_image_lst
-        # for i in range(len(img_lst)):
-        for i in tqdm.trange(len(img_lst), desc='generating segment images using segmaps...'):
-            img_name = img_names[i]
-            segmap = segmap_mask_lst[i]
-            img = img_lst[i]
-            out_img_name = img_name.replace("/gt_imgs/", "/segmaps/").replace(".jpg", ".png") # 存成jpg的话，pixel value会有误差
-            try: os.makedirs(os.path.dirname(out_img_name), exist_ok=True)
-            except: pass
-            encoded_segmap = encode_segmap_mask_to_image(segmap)
-            save_rgb_image_to_path(encoded_segmap, out_img_name)
-        
-            for mode in ['head', 'torso', 'person', 'bg']:
-                out_img, mask = seg_model._seg_out_img_with_segmap(img, segmap, mode=mode)
+        print("| Extracted Segmaps Done.")
+
+        if nerf: # means that we extract only one video, so can enable multi-process acceleration 
+            args = [(img_names[i], segmap_mask_lst[i], img_lst[i]) for i in range(len(img_lst))]
+            for (_, res) in multiprocess_run_tqdm(generate_segment_imgs_job, args=args, num_workers=16, desc='generating segment images using segmaps in multi-process...'):
+                pass
+        else:
+            for i in tqdm.trange(len(img_lst), desc='generating segment images using segmaps...'):
+                img_name = img_names[i]
+                segmap = segmap_mask_lst[i]
+                img = img_lst[i]
+                out_img_name = img_name.replace("/gt_imgs/", "/segmaps/").replace(".jpg", ".png") # 存成jpg的话，pixel value会有误差
+                try: os.makedirs(os.path.dirname(out_img_name), exist_ok=True)
+                except: pass
+                encoded_segmap = encode_segmap_mask_to_image(segmap)
+                save_rgb_image_to_path(encoded_segmap, out_img_name)
+            
+                for mode in ['head', 'torso', 'person', 'bg']:
+                    out_img, mask = seg_model._seg_out_img_with_segmap(img, segmap, mode=mode)
+                    img_alpha = 255 * np.ones((img.shape[0], img.shape[1], 1), dtype=np.uint8) # alpha
+                    mask = mask[0][..., None]
+                    img_alpha[~mask] = 0
+                    out_img_name = img_name.replace("/gt_imgs/", f"/{mode}_imgs/").replace(".jpg", ".png")
+                    save_rgb_alpha_image_to_path(out_img, img_alpha, out_img_name)
+                
+                inpaint_torso_img, inpaint_torso_img_mask, inpaint_torso_with_bg_img, inpaint_torso_with_bg_img_mask = inpaint_torso_job(img, segmap)
                 img_alpha = 255 * np.ones((img.shape[0], img.shape[1], 1), dtype=np.uint8) # alpha
-                mask = mask[0][..., None]
-                img_alpha[~mask] = 0
-                out_img_name = img_name.replace("/gt_imgs/", f"/{mode}_imgs/").replace(".jpg", ".png")
-                save_rgb_alpha_image_to_path(out_img, img_alpha, out_img_name)
-            
-            inpaint_torso_img, inpaint_torso_img_mask, inpaint_torso_with_bg_img, inpaint_torso_with_bg_img_mask = inpaint_torso_job(img, segmap)
-            img_alpha = 255 * np.ones((img.shape[0], img.shape[1], 1), dtype=np.uint8) # alpha
-            img_alpha[~inpaint_torso_img_mask[..., None]] = 0
-            out_img_name = img_name.replace("/gt_imgs/", f"/inpaint_torso_imgs/").replace(".jpg", ".png")
-            save_rgb_alpha_image_to_path(inpaint_torso_img, img_alpha, out_img_name)
-            
+                img_alpha[~inpaint_torso_img_mask[..., None]] = 0
+                out_img_name = img_name.replace("/gt_imgs/", f"/inpaint_torso_imgs/").replace(".jpg", ".png")
+                save_rgb_alpha_image_to_path(inpaint_torso_img, img_alpha, out_img_name)
+        
+        print("| Extracting background...")
         bg_prefix_name = f"bg{BG_NAME_MAP[background_method]}"
         bg_img = extract_background(img_lst, segmap_mask_lst, method=background_method, device=device, mix_bg=mix_bg)
         if nerf:
@@ -301,15 +339,20 @@ def extract_segment_job(video_name, nerf=False, idx=None, total=None, background
         else:
             out_img_name = video_name.replace("/video/", f"/{bg_prefix_name}_img/").replace(".mp4", ".jpg")
         save_rgb_image_to_path(bg_img, out_img_name)
+        print("| Extracted background done.")
         
+        print("| Extracting com_imgs...")
         com_prefix_name = f"com{BG_NAME_MAP[background_method]}"
-        for i, img_name in enumerate(img_names):
+        for i in tqdm.trange(len(img_names), desc='extracting com_imgs'):
+            img_name = img_names[i]
             com_img = img_lst[i].copy()
             segmap = segmap_mask_lst[i]
             bg_part = segmap[0].astype(bool)[..., None].repeat(3,axis=-1)
             com_img[bg_part] = bg_img[bg_part]
             out_img_name = img_name.replace("/gt_imgs/", f"/{com_prefix_name}_imgs/")
             save_rgb_image_to_path(com_img, out_img_name)
+        print("| Extracted com_imgs done.")
+        
         return 0
     except Exception as e:
         print(str(type(e)), e)
@@ -418,8 +461,8 @@ def get_todo_vid_names(vid_names, background_method='knn', only_bg_img=False):
 if __name__ == '__main__':
     import argparse, glob, tqdm, random
     parser = argparse.ArgumentParser()
-    parser.add_argument("--vid_dir", default='/home/tiger/datasets/raw/CelebV-HQ/video')
-    parser.add_argument("--ds_name", default='CelebV-HQ')
+    parser.add_argument("--vid_dir", default='data/raw/videos/May.mp4')
+    parser.add_argument("--ds_name", default='nerf')
     parser.add_argument("--num_workers", default=48, type=int)
     parser.add_argument("--seed", default=0, type=int)
     parser.add_argument("--process_id", default=0, type=int)
@@ -496,5 +539,8 @@ if __name__ == '__main__':
         extract_job = extract_segment_job
         fn_args = [(vid_name,ds_name=='nerf',i,len(vid_names), background_method, device, total_gpus, mix_bg) for i, vid_name in enumerate(vid_names)]
         
-    for vid_name in multiprocess_run_tqdm(extract_job, fn_args, desc=f"Root process {args.process_id}:  segment images", num_workers=args.num_workers):
-        pass
+    if ds_name == 'nerf': # 处理单个视频
+        extract_job(vid_names[0], nerf=True)
+    else:
+        for vid_name in multiprocess_run_tqdm(extract_job, fn_args, desc=f"Root process {args.process_id}:  segment images", num_workers=args.num_workers):
+            pass
