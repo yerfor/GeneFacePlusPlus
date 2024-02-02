@@ -41,10 +41,12 @@
 
 - 步骤4: 激活`geneface`的Python环境，然后执行: 
 ```bash
+export PYTHONPATH=./
 python inference/genefacepp_infer.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso --drv_aud=data/raw/val_wavs/MacronSpeech.wav --out_name=may_demo.mp4
 ```
   - 或者可以使用我们提供的Gradio WebUI: 
 ```bash
+export PYTHONPATH=./
 python inference/app_genefacepp.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso
 ```
 ## 在自己的视频上训练GeneFace++

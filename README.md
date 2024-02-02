@@ -1,8 +1,6 @@
 # GeneFace++: Generalized and Stable Real-Time 3D Talking Face Generation
 
-[![arXiv](https://img.shields.io/badge/arXiv-Paper-%3CCOLOR%3E.svg)](https://arxiv.org/abs/2305.00787)| [![GitHub Stars](https://img.shields.io/github/stars/yerfor/GeneFacePlusPlus)](https://github.com/yerfor/GeneFacePlusPlus) | [![downloads](https://img.shields.io/github/downloads/yerfor/GeneFacePlusPlus/total.svg)](https://github.com/yerfor/GeneFacePlusPlus/releases) | ![visitors](https://visitor-badge.glitch.me/badge?page_id=yerfor/GeneFacePlusPlus)
-
-[中文文档](./README-zh.md)
+[![arXiv](https://img.shields.io/badge/arXiv-Paper-%3CCOLOR%3E.svg)](https://arxiv.org/abs/2305.00787)| [![GitHub Stars](https://img.shields.io/github/stars/yerfor/GeneFacePlusPlus)](https://github.com/yerfor/GeneFacePlusPlus) | [中文文档](./README-zh.md)
 
 This is the official implementation of GeneFace++ [Paper](https://arxiv.org/abs/2301.13430) with Pytorch，which enables high lip-sync, high video-reality and high system-efficiency 3D talking face generation. You can visit our [Demo Page](https://genefaceplusplus.github.io/) to watch demo videos and learn more details.
 
@@ -41,10 +39,12 @@ After these steps，your directories `checkpoints` and `data` should be like thi
 
 - Step 4: activate `geneface` Python environment, and execute: 
 ```bash
+export PYTHONPATH=./
 python inference/genefacepp_infer.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso --drv_aud=data/raw/val_wavs/MacronSpeech.wav --out_name=may_demo.mp4
 ```
 Or you can play with our Gradio WebUI: 
 ```bash
+export PYTHONPATH=./
 python inference/app_genefacepp.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso
 ```
 
