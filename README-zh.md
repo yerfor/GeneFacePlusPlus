@@ -12,6 +12,9 @@
     <br>
 </p>
 
+## 您可能同样感兴趣
+- 我们发布了Real3D-portrait (ICLR 2024 Spotlight), ([https://github.com/yerfor/Real3DPortrait](https://github.com/yerfor/Real3DPortrait)), 一个基于NeRF的单图驱动说话人合成系统, 仅需上传一张照片即可合成真实的说话人视频!
+
 ## 快速上手！
 我们在这里提供一个最快体验GeneFace++的流程。
 

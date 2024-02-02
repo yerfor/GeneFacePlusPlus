@@ -12,6 +12,9 @@ This is the official implementation of GeneFace++ [Paper](https://arxiv.org/abs/
     <br>
 </p>
 
+## You may also interested in 
+- We release Real3D-portrait (ICLR 2024 Spotlight), ([https://github.com/yerfor/Real3DPortrait](https://github.com/yerfor/Real3DPortrait)), a NeRF-based one-shot talking face system. Only upload one image and enjoy realistic talking face!
+
 ## Quick Start!
 We provide a guide for a quick start in GeneFace++.
 
