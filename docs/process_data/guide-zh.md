@@ -10,6 +10,7 @@ mv data/raw/videos/${VIDEO_ID}_512.mp4 data/raw/videos/${VIDEO_ID}.mp4
 # 步骤1: 提取音频特征, 如mel, f0, hubuert
 ```
 export CUDA_VISIBLE_DEVICES=0
+export PYTHONPATH=./
 export VIDEO_ID=May
 mkdir -p data/processed/videos/${VIDEO_ID}
 ffmpeg -i data/raw/videos/${VIDEO_ID}.mp4 -f wav -ar 16000 data/processed/videos/${VIDEO_ID}/aud.wav 
@@ -19,6 +20,7 @@ python data_gen/utils/process_audio/extract_mel_f0.py --video_id=${VIDEO_ID}
 
 # 步骤2. 提取图片
 ```
+export PYTHONPATH=./
 export VIDEO_ID=May
 export CUDA_VISIBLE_DEVICES=0
 mkdir -p data/processed/videos/${VIDEO_ID}/gt_imgs
@@ -31,12 +33,14 @@ python data_gen/utils/process_video/extract_segment_imgs.py --ds_name=nerf --vid
 ### num_workers是本机上的CPU worker数量；total_process是使用的机器数；process_id是本机的编号
 
 ```
+export PYTHONPATH=./
 export VIDEO_ID=May
 python data_gen/utils/process_video/extract_lm2d.py --ds_name=nerf --vid_dir=data/raw/videos/${VIDEO_ID}.mp4
 ```
 
 # 步骤3. Fit 3DMM
 ```
+export PYTHONPATH=./
 export VIDEO_ID=May
 export CUDA_VISIBLE_DEVICES=0
 python data_gen/utils/process_video/fit_3dmm_landmark.py --ds_name=nerf --vid_dir=data/raw/videos/${VIDEO_ID}.mp4 --reset  --debug --id_mode=global
@@ -44,6 +48,7 @@ python data_gen/utils/process_video/fit_3dmm_landmark.py --ds_name=nerf --vid_di
 
 # 步骤4. Binarize（将数据打包）
 ```
+export PYTHONPATH=./
 export VIDEO_ID=May
 python data_gen/runs/binarizer_nerf.py --video_id=${VIDEO_ID}
 ```
