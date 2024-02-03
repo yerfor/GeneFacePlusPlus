@@ -12,8 +12,9 @@ mv data/raw/videos/${VIDEO_ID}_512.mp4 data/raw/videos/${VIDEO_ID}.mp4
 ```
 export CUDA_VISIBLE_DEVICES=0
 export VIDEO_ID=May
+export PYTHONPATH=./
 mkdir -p data/processed/videos/${VIDEO_ID}
-ffmpeg -i data/raw/videos/${VIDEO_ID}.mp4 -f wav -ar 16000 data/processed/videos/${VIDEO_ID}/aud.wav 
+ffmpeg -i data/raw/videos/${VIDEO_ID}.mp4 -f wav -ar 16000 data/processed/videos/${VIDEO_ID}/aud.wav
 python data_gen/utils/process_audio/extract_hubert.py --video_id=${VIDEO_ID}
 python data_gen/utils/process_audio/extract_mel_f0.py --video_id=${VIDEO_ID}
 ```
@@ -21,6 +22,7 @@ python data_gen/utils/process_audio/extract_mel_f0.py --video_id=${VIDEO_ID}
 # Step2. Extract images
 TIPS: add `--force_single_process` if you discover that multiprocessing does not work well with Mediapipe
 ```
+export PYTHONPATH=./
 export VIDEO_ID=May
 export CUDA_VISIBLE_DEVICES=0
 mkdir -p data/processed/videos/${VIDEO_ID}/gt_imgs
@@ -33,6 +35,7 @@ python data_gen/utils/process_video/extract_segment_imgs.py --ds_name=nerf --vid
 ### num_workers: number of CPU workers；total_process: number of machines to be used；process_id: machine ID 
 
 ```
+export PYTHONPATH=./
 export VIDEO_ID=May
 python data_gen/utils/process_video/extract_lm2d.py --ds_name=nerf --vid_dir=data/raw/videos/${VIDEO_ID}.mp4
 ```
@@ -40,12 +43,14 @@ python data_gen/utils/process_video/extract_lm2d.py --ds_name=nerf --vid_dir=dat
 # Step3. Fit 3DMM
 ```
 export VIDEO_ID=May
+export PYTHONPATH=./
 export CUDA_VISIBLE_DEVICES=0
 python data_gen/utils/process_video/fit_3dmm_landmark.py --ds_name=nerf --vid_dir=data/raw/videos/${VIDEO_ID}.mp4 --reset  --debug --id_mode=global
 ```
 
 # Step4. Binarize
 ```
+export PYTHONPATH=./
 export VIDEO_ID=May
 python data_gen/runs/binarizer_nerf.py --video_id=${VIDEO_ID}
 ```
