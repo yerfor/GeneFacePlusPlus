@@ -107,7 +107,7 @@ def extract_background(img_lst, segmap_mask_lst=None, method="knn", device='cpu'
         # nearest neighbors
         all_xys = np.mgrid[0:h, 0:w].reshape(2, -1).transpose() # [512*512, 2] coordinate grid
         distss = []
-        for idx, img in tqdm.tqdm(enumerate(img_lst), desc='combining backgrounds...'):
+        for idx, img in tqdm.tqdm(enumerate(img_lst), desc='combining backgrounds...', total=len(img_lst)):
             segmap = get_segmap_mask(img_lst=img_lst, segmap_mask_lst=segmap_mask_lst, index=idx)
             bg = (segmap[0]).astype(bool) # [h,w] bool mask
             fg_xys = np.stack(np.nonzero(~bg)).transpose(1, 0) # [N_nonbg,2] coordinate of non-bg pixels
