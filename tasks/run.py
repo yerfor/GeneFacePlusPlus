@@ -19,9 +19,6 @@ def clear_gpus():
         os.system(f'pkill -f "voidgpu{d}"')
 
 if __name__ == '__main__':
-    set_hparams()
-    # clear_gpus()
-    run_task()
     try:
         set_hparams()
         run_task()
