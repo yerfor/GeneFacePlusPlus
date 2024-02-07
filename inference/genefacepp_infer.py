@@ -93,7 +93,10 @@ def inject_blink_to_lm68(lm68):
     
     T = len(lm68)
     period = 100
-    blink_factor_lst = np.array([0.1, 0.5, 0.7, 1.0, 0.7, 0.5, 0.1]) # * 0.9
+    blink_factor_lst = np.array([0.4, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.4]) # * 0.9
+    # blink_factor_lst = np.array([0.4, 0.4, 0.6, 0.8, 1.0, 0.8, 0.6, 0.4, 0.4]) # * 0.9
+    # blink_factor_lst = np.array([0.4, 0.6, 0.8, 1.0, 0.8, 0.6, 0.4]) # * 0.9
+    # blink_factor_lst = np.array([0.1, 0.5, 0.7, 1.0, 0.7, 0.5, 0.1]) # * 0.9
     dur = len(blink_factor_lst)
     for i in range(T):
         if (i + 25) % period == 0:
@@ -377,7 +380,7 @@ class GeneFace2Infer:
             idexp_lm3d[:, :68*3] = LLE_percent * feat_fuse + (1-LLE_percent) * idexp_lm3d[:,:68*3]
             idexp_lm3d = idexp_lm3d.reshape([-1, 68, 3])
             idexp_lm3d_normalized = (idexp_lm3d - idexp_lm3d_mean) / idexp_lm3d_std
-            idexp_lm3d_normalized = torch.clamp(idexp_lm3d_normalized, min=lower, max=upper)
+            # idexp_lm3d_normalized = torch.clamp(idexp_lm3d_normalized, min=lower, max=upper)
 
         cano_lm3d = (idexp_lm3d_mean + idexp_lm3d_std * idexp_lm3d_normalized) / 10 + self.face3d_helper.key_mean_shape[index_lm68_from_lm478].unsqueeze(0)
         if inp['blink_mode'] == 'period':
@@ -437,7 +440,6 @@ class GeneFace2Infer:
                 pred_rgb_lst.append(pred_rgb)
         pred_rgbs = torch.stack(pred_rgb_lst).cpu()
         pred_rgbs = pred_rgbs * 2 - 1 # to -1~1 scale
-
 
         if inp['debug']:
             # prepare for output
