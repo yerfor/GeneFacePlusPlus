@@ -18,9 +18,9 @@ We provide a guide for a quick start in GeneFace++.
 
 - Step 1: Follow the steps in `docs/prepare_env/install_guide.md`, create a new python environment named `geneface`, and download 3DMM files into `deep_3drecib/BFM`.
 
-- Step 2: Download pre-processed dataset of May([Google Drive](https://drive.google.com/drive/folders/1SwZ7uRa5ESzzq_Cd21-Lk5heAZxa9oZO?usp=sharing) or [BaiduYun Disk](https://pan.baidu.com/s/1zR914cBQcGOAl4o4XInBNw?pwd=e1a3) with password e1a3), and place it here `data/binary/videos/May/trainval_dataset.npy`
+- Step 2: Download pre-processed dataset of May([Google Drive](https://drive.google.com/drive/folders/1SwZ7uRa5ESzzq_Cd21-Lk5heAZxa9oZO?usp=sharing) or [BaiduYun Disk](https://pan.baidu.com/s/1U_FalVoxgb9sAb9FD1cZEw?pwd=98n4) with password 98n4), and place it here `data/binary/videos/May/trainval_dataset.npy`
 
-- Step 3: Download pre-trained audio-to-motino model ([Google Drive](https://drive.google.com/drive/folders/1FqvNbQgOSkvVO8i-vCDJmKM4ppPZjUpL?usp=sharing) or [BaiduYun Disk](https://pan.baidu.com/s/19UZxMrO-ZvkOeYzUkOKsTQ?pwd=9cqp) with password 9cqp) and motion-to-video which is specific to May (in this [Google Drive](https://drive.google.com/file/d/19QEoS6-JF0TV1XwBbsRXXh8MBz9WFXMP/view?usp=sharing) or in this [BaiduYun Disk](https://pan.baidu.com/s/1toVpbOXGNBVKv9sIHNGUPQ?pwd=exwd) password: exwd), and unzip them to `./checkpoints/`
+- Step 3: Download pre-trained audio-to-motino model `audio2motion_vae.zip` ([Google Drive](https://drive.google.com/drive/folders/1M6CQH52lG_yZj7oCMaepn3Qsvb-8W2pT?usp=sharing) or [BaiduYun Disk](https://pan.baidu.com/s/19UZxMrO-ZvkOeYzUkOKsTQ?pwd=9cqp) with password 9cqp) and motion-to-video checkpoint `motion2video_nerf.zip`, which is specific to May (in this [Google Drive](https://drive.google.com/drive/folders/1M6CQH52lG_yZj7oCMaepn3Qsvb-8W2pT?usp=sharing) or in this[BaiduYun Disk](https://pan.baidu.com/s/1U_FalVoxgb9sAb9FD1cZEw?pwd=98n4) with password 98n4), and unzip them to `./checkpoints/`
 
 After these steps，your directories `checkpoints` and `data` should be like this：
 

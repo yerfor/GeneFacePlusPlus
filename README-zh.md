@@ -20,9 +20,9 @@
 
 - 步骤1：根据我们在`docs/prepare_env/install_guide.md`中的步骤，新建一个名为`geneface`的Python环境，并下载所需的3DMM文件。
 
-- 步骤2：下载预处理好的May的数据集([Google Drive](https://drive.google.com/drive/folders/1SwZ7uRa5ESzzq_Cd21-Lk5heAZxa9oZO?usp=sharing) 或 [BaiduYun Disk](https://pan.baidu.com/s/1zR914cBQcGOAl4o4XInBNw?pwd=e1a3) 提取码: e1a3), 放置在`data/binary/videos/May/trainval_dataset.npy`路径下。
+- 步骤2：下载预处理好的May的数据集 `trainval_dataset.npy` ([Google Drive](https://drive.google.com/drive/folders/1SwZ7uRa5ESzzq_Cd21-Lk5heAZxa9oZO?usp=sharing) 或 [BaiduYun Disk](https://pan.baidu.com/s/1U_FalVoxgb9sAb9FD1cZEw?pwd=98n4) 提取码: 98n4), 放置在`data/binary/videos/May/trainval_dataset.npy`路径下。
 
-- 步骤3：下载预训练好的通用的audio-to-motino模型 ([Google Drive](https://drive.google.com/drive/folders/1FqvNbQgOSkvVO8i-vCDJmKM4ppPZjUpL?usp=sharing) 或 [BaiduYun Disk](https://pan.baidu.com/s/19UZxMrO-ZvkOeYzUkOKsTQ?pwd=9cqp) 提取码: 9cqp) 和专用于May的motion-to-video模型 ([Google Drive](https://drive.google.com/file/d/19QEoS6-JF0TV1XwBbsRXXh8MBz9WFXMP/view?usp=sharing) 或 [BaiduYun Disk](https://pan.baidu.com/s/1toVpbOXGNBVKv9sIHNGUPQ?pwd=exwd) 提取码: exwd), 解压到`./checkpoints/`目录下。
+- 步骤3：下载预训练好的通用的audio-to-motino模型 `audio2motion_vae.zip` ([Google Drive](https://drive.google.com/drive/folders/1M6CQH52lG_yZj7oCMaepn3Qsvb-8W2pT?usp=sharing) 或 [BaiduYun Disk](https://pan.baidu.com/s/1U_FalVoxgb9sAb9FD1cZEw?pwd=98n4) 提取码: 98n4) 和专用于May的motion-to-video模型 `motion2video_nerf.zip` ([Google Drive](https://drive.google.com/drive/folders/1M6CQH52lG_yZj7oCMaepn3Qsvb-8W2pT?usp=sharing) 或 [BaiduYun Disk](https://pan.baidu.com/s/1U_FalVoxgb9sAb9FD1cZEw?pwd=98n4) 提取码: 98n4), 解压到`./checkpoints/`目录下。
 
 做完上面的步骤后，您的 `checkpoints`和`data` 文件夹的结构应该是这样的：
 
