@@ -21,7 +21,7 @@ polygon_face_mask: true
 
 n_rays: 65536 # 262144 # 65536 # num rays sampled per image for each training step, default 256*256
 
-clip_grad_norm: 1. # 1. in fp16 leads to nan
+clip_grad_norm: 0. # 1. in fp16 leads to nan
 
 # to tune scale
 # https://github.com/NVlabs/instant-ngp/blob/master/docs/nerf_dataset_tips.md

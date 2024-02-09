@@ -179,7 +179,6 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             if orig_len >= num_train_samples:
                 self.samples = self.samples[: num_train_samples]
                 print(f"| WARNING: we are only using the first {num_train_samples} frames of total {orig_len} frames to train the model!")
-        
 
         self.prefix = prefix
         self.cond_type = hparams['cond_type']
@@ -254,10 +253,14 @@ class RADNeRFDataset(torch.utils.data.Dataset):
             idexp_lm3d_normalized = (idexp_lm3d_arr - idexp_lm3d_mean) / idexp_lm3d_std
             euler, trans = convert_to_tensor(ds_dict['euler']), convert_to_tensor(ds_dict['trans'])
             self.lm2ds = face3d_helper.reconstruct_lm2d_nerf(id, exp, euler, trans)
+            self.eye_area_percents = convert_to_tensor(ds_dict['eye_area_percent'])
             if prefix == 'train':
                 self.lm2ds = self.lm2ds[:len(self.samples)]
+                self.eye_area_percents = self.eye_area_percents[:len(self.samples)]
             elif prefix == 'val':
                 self.lm2ds = self.lm2ds[-len(self.samples):]
+                self.eye_area_percents = self.eye_area_percents[-len(self.samples):]
+
             # if hparams.get("with_sr"):
             #     self.lm2ds = self.lm2ds / 2
             self.lm68s = torch.tensor(self.lm2ds[:, index_lm68_from_lm478, :])
@@ -371,6 +374,8 @@ class RADNeRFDataset(torch.utils.data.Dataset):
 
         sample['rays_o'] = rays['rays_o']
         sample['rays_d'] = rays['rays_d']
+
+        sample['eye_area_percent'] = self.eye_area_percents[idx]
 
         if hparams.get("polygon_face_mask", True):
             f_mask = dilate_boundary_mask(get_boundary_mask(self.lm2ds[idx], index_mode='lm68', h=self.H,w=self.W).unsqueeze(0).cuda(), ksize=3)

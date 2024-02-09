@@ -11,6 +11,7 @@ from data_util.face3d_helper import Face3DHelper
 from utils.commons.euler2rot import euler_trans_2_c2w, c2w_to_euler_trans
 from data_gen.utils.process_video.euler2quaterion import euler2quaterion, quaterion2euler
 from deep_3drecon.deep_3drecon_models.bfm import ParametricFaceModel
+from data_gen.utils.process_video.extract_blink import get_eye_area_percent
 
 
 def euler2rot(euler_angle):
@@ -229,6 +230,8 @@ def load_processed_data(processed_dir):
     coeff_dict = np.load(coeff_npy_name, allow_pickle=True).tolist()
     identity_arr = coeff_dict['id']
     exp_arr = coeff_dict['exp']
+    eye_area_percent = get_eye_area_percent(torch.tensor(coeff_dict['id']), torch.tensor(coeff_dict['exp']), face3d_helper)
+    ret_dict['eye_area_percent'] = eye_area_percent
     ret_dict['id'] = identity_arr
     ret_dict['exp'] = exp_arr
     euler_arr = ret_dict['euler'] = coeff_dict['euler']

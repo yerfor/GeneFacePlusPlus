@@ -29,4 +29,4 @@ if __name__ == '__main__':
             shared_file_name = f'/home/tiger/nfs/pytorch_ddp_sharedfile/{exp_name}'
             if os.path.exists(shared_file_name):
                 os.system(f"rm -r {shared_file_name}")
-        
+

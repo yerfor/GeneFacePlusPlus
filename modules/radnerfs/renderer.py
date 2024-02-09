@@ -103,7 +103,7 @@ class NeRFRenderer(nn.Module):
         self.mean_count = 0
         self.local_step = 0
         
-    def cal_cond_feat(self, cond):
+    def cal_cond_feat(self, cond, **kwargs):
         raise NotImplementedError()
     
     def forward(self, x, d):
@@ -283,7 +283,7 @@ class NeRFRenderer(nn.Module):
             self.mean_count = int(self.step_counter[:total_step, 0].sum().item() / total_step)
         self.local_step = 0
 
-    def render(self, rays_o, rays_d, cond, bg_coords, poses, index=0, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, T_thresh=1e-4, cond_mask=None, **kwargs):
+    def render(self, rays_o, rays_d, cond, bg_coords, poses, index=0, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, T_thresh=1e-4, cond_mask=None,eye_area_percent=None,**kwargs):
         # rays_o, rays_d: [B, N, 3], assumes B == 1
         # cond: [B, 29, 16]
         # bg_coords: [1, N, 2]
@@ -305,7 +305,7 @@ class NeRFRenderer(nn.Module):
         fars = fars.detach()
 
         # encode audio
-        cond_feat = self.cal_cond_feat(cond) # [1, 64]
+        cond_feat = self.cal_cond_feat(cond, eye_area_percent=eye_area_percent) # [1, 64]
 
         if self.individual_embedding_dim > 0:
             if self.training:

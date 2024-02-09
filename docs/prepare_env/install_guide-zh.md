@@ -29,6 +29,7 @@ pip install openmim==0.3.9
 mim install mmcv==2.1.0 # 使用mim来加速mmcv安装
 
 # 其他依赖项
+sudo apt-get install libasound2-dev portaudio19-dev
 pip install -r docs/prepare_env/requirements.txt -v
 
 # 构建torch-ngp

@@ -51,12 +51,18 @@ python inference/app_genefacepp.py --a2m_ckpt=checkpoints/audio2motion_vae --hea
 ## Train GeneFace++ with your own videos
 Please refer to details in  `docs/process_data` and `docs/train_and_infer`.
 
+Below are answers to frequently asked questions when training GeneFace++ on custom videos:
+- Please make sure that the head segment occupies a relatively large region in the video (e.g., similar to the provided `May.mp4`). Or you need to hand-crop your training video. [issue](https://github.com/yerfor/GeneFacePlusPlus/issues/30)
+- Make sure that the talking person appears in every frame of the video, otherwise the data preprocessing pipeline may be failed.
+- We only tested our code on Liunx (Ubuntu/CentOS). It is welcome that someone who are willing to share their installation guide on Windows/MacOS.
+
+
 ## ToDo
 - [x] **Release Inference Code of Audio2Motion and Motion2Video.**
 - [x] **Release Pre-trained weights of Audio2Motion and Motion2Video.**
 - [x] **Release Training Code of Motino2Video Renderer.**
 - [x] **Release Gradio Demo.**
-- [ ] **Release Training Code of Audio2Motion and Post-Net.**
+- [ ] **Release Training Code of Audio2Motion and Post-Net. (Maybe 2024.06.01) **
 
 ## Citation
 If you found this repo helpful to your work, please consider cite us:

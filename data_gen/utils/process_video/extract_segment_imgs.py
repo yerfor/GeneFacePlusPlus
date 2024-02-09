@@ -89,7 +89,7 @@ def extract_background(img_lst, segmap_mask_lst=None, method="knn", device='cpu'
         
     if method == "knn":
         num_frames = len(img_lst)
-        if num_frames < 100:
+        if num_frames <= 100:
             FRAME_SELECT_INTERVAL = 5
         elif num_frames < 10000:
             FRAME_SELECT_INTERVAL = 20

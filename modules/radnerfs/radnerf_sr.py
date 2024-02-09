@@ -69,6 +69,14 @@ class RADNeRFwithSR(NeRFRenderer):
         self.smo_win_size = hparams['smo_win_size']
 
         self.cond_prenet = AudioNet(self.cond_in_dim, self.cond_out_dim, win_size=self.cond_win_size)
+        if hparams.get("add_eye_blink_cond", False):
+            self.blink_embedding = nn.Embedding(1,  self.cond_out_dim//2)
+            self.blink_encoder = nn.Sequential(
+                *[
+                    nn.Linear(self.cond_out_dim//2, self.cond_out_dim//2),
+                    nn.Linear(self.cond_out_dim//2, hparams['eye_blink_dim']),
+                ]
+            )
         # a attention net that smoothes the condition feat sequence
         self.with_att = hparams['with_att']
         if self.with_att:
@@ -113,7 +121,7 @@ class RADNeRFwithSR(NeRFRenderer):
         self.requires_grad_(False)
         self.sr_net.requires_grad_(True)
 
-    def cal_cond_feat(self, cond):
+    def cal_cond_feat(self, cond, eye_area_percent=None):
         """
         cond: [B, T, Ç]
             if deepspeech, [1/8, T=16, 29]
@@ -121,6 +129,13 @@ class RADNeRFwithSR(NeRFRenderer):
             if idexp_lm3d_normalized, [1/5, T=1, 204]
         """
         cond_feat = self.cond_prenet(cond)
+        if hparams.get("add_eye_blink_cond", False):
+            if eye_area_percent is None:
+                eye_area_percent = torch.zeros([1,1], dtype=cond_feat.dtype)
+            blink_feat = self.blink_embedding(torch.tensor(0, device=cond_feat.device)).reshape([1, -1])
+            blink_feat = blink_feat * eye_area_percent.reshape([1,1]).to(cond_feat.device)
+            blink_feat = self.blink_encoder(blink_feat)
+            cond_feat[..., :hparams['eye_blink_dim']] = cond_feat[..., :hparams['eye_blink_dim']] + blink_feat.expand(cond_feat[..., :shparams['eye_blink_dim']].shape)
         if self.with_att:
             cond_feat = self.cond_att_net(cond_feat) # [1, 64] 
         return cond_feat
@@ -185,8 +200,8 @@ class RADNeRFwithSR(NeRFRenderer):
             'geo_feat': geo_feat,
         }
     
-    def render(self, rays_o, rays_d, cond, bg_coords, poses, index=0, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, T_thresh=1e-4, cond_mask=None, **kwargs):
-        results = super().render(rays_o, rays_d, cond, bg_coords, poses, index, dt_gamma, bg_color, perturb, force_all_rays, max_steps, T_thresh, cond_mask, **kwargs)
+    def render(self, rays_o, rays_d, cond, bg_coords, poses, index=0, dt_gamma=0, bg_color=None, perturb=False, force_all_rays=False, max_steps=1024, T_thresh=1e-4, cond_mask=None, eye_area_percent=None, **kwargs):
+        results = super().render(rays_o, rays_d, cond, bg_coords, poses, index, dt_gamma, bg_color, perturb, force_all_rays, max_steps, T_thresh, cond_mask, eye_area_percent=eye_area_percent, **kwargs)
         rgb_image = results['rgb_map'].reshape([1, 256, 256, 3]).permute(0,3,1,2)
         sr_rgb_image = self.sr_net(rgb_image.clone())
         sr_rgb_image = sr_rgb_image.clamp(0,1)

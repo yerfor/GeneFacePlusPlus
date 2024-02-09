@@ -25,3 +25,5 @@ sr_start_iters: 0_0000
 lpips_start_iters: 20_0000
 max_updates: 25_0000
 num_ckpt_keep: 1
+add_eye_blink_cond: true # to better control eye blink
+eye_blink_dim: 8

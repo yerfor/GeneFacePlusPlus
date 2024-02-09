@@ -35,28 +35,21 @@ class RADNeRF(NeRFRenderer):
         self.cond_out_dim = hparams['cond_out_dim'] // 2 * 2
         self.cond_win_size = hparams['cond_win_size']
         self.smo_win_size = hparams['smo_win_size']
-        if hparams.get("separate_uf_lf", False):
-            assert self.hparams['nerf_keypoint_mode'] == 'lm68'
-            # index_lf_from_lm68 = [4,5,6,7,8,9,10,11,12] + list(range(48,68))
-            # index_uf_from_lm68 = list(range(17,48))
-            index_lf_from_lm68 = [4, 8, 12] + list(range(48,68))
-            index_uf_from_lm68 = [17, 19, 21] + [22, 24, 26] + list(range(36,48))
 
-            self.cond_prenet_uf = AudioNet(len(index_uf_from_lm68)*3, self.cond_out_dim//2, win_size=self.cond_win_size)
-            self.cond_prenet_lf = AudioNet(len(index_lf_from_lm68)*3, self.cond_out_dim//2, win_size=self.cond_win_size)
-            self.cond_att_net_uf = AudioAttNet(self.cond_out_dim//2, seq_len=self.smo_win_size)
-            self.cond_att_net_lf = AudioAttNet(self.cond_out_dim//2, seq_len=self.smo_win_size)
-        else:
-            self.cond_prenet = AudioNet(self.cond_in_dim, self.cond_out_dim, win_size=self.cond_win_size)
-            if hparams.get("to_heatmap", False):
-                self.cond_prenet = HeatMapEncoder(self.cond_in_dim, self.cond_out_dim, win_size=1)
-            # a attention net that smoothes the condition feat sequence
-            self.with_att = hparams['with_att']
-            if self.with_att:
-                self.cond_att_net = AudioAttNet(self.cond_out_dim, seq_len=self.smo_win_size)
-
-                if hparams.get("to_heatmap", False):
-                    self.cond_att_net = HeatMapAttNet(self.cond_out_dim, seq_len=self.smo_win_size)
+        self.cond_prenet = AudioNet(self.cond_in_dim, self.cond_out_dim, win_size=self.cond_win_size)
+        if hparams.get("add_eye_blink_cond", False):
+            self.blink_embedding = nn.Embedding(1,  self.cond_out_dim//2)
+            self.blink_encoder = nn.Sequential(
+                *[
+                    nn.Linear(self.cond_out_dim//2, self.cond_out_dim//2),
+                    nn.Linear(self.cond_out_dim//2, hparams['eye_blink_dim']),
+                ]
+            )
+        # a attent
+        # a attention net that smoothes the condition feat sequence
+        self.with_att = hparams['with_att']
+        if self.with_att:
+            self.cond_att_net = AudioAttNet(self.cond_out_dim, seq_len=self.smo_win_size)
         
         # a ambient network that predict the 2D ambient coordinate
         # the ambient grid models the dynamic of canonical face
@@ -92,14 +85,22 @@ class RADNeRF(NeRFRenderer):
         self.color_net = MLP(self.direction_embedding_dim + self.geo_feat_dim + self.individual_embedding_dim, 3, self.hidden_dim_color, self.num_layers_color)
         self.dropout = nn.Dropout(p=hparams['cond_dropout_rate'], inplace=False)
 
-    def cal_cond_feat(self, cond):
+    def cal_cond_feat(self, cond, eye_area_percent=None):
         """
         cond: [B, T, Ç]
             if deepspeech, [1/8, T=16, 29]
             if eserpanto, [1/8, T=16, 44]
             if idexp_lm3d_normalized, [1/5, T=1, 204]
         """
+        hparams = self.hparams
         cond_feat = self.cond_prenet(cond)
+        if hparams.get("add_eye_blink_cond", False):
+            if eye_area_percent is None:
+                eye_area_percent = torch.zeros([1,1], dtype=cond_feat.dtype)
+            blink_feat = self.blink_embedding(torch.tensor(0, device=cond_feat.device)).reshape([1, -1])
+            blink_feat = blink_feat * eye_area_percent.reshape([1,1]).to(cond_feat.device)
+            blink_feat = self.blink_encoder(blink_feat)
+            cond_feat[..., :hparams['eye_blink_dim']] = cond_feat[..., :hparams['eye_blink_dim']] + blink_feat.expand(cond_feat[..., :hparams['eye_blink_dim']].shape)
         if self.with_att:
             cond_feat = self.cond_att_net(cond_feat) # [1, 64] 
         return cond_feat

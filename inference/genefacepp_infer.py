@@ -77,6 +77,7 @@ def inject_blink_to_lm68(lm68):
     # [T, 68, 2]
     # lm68[:,36:48] = lm68[0:1,36:48].repeat([len(lm68), 1, 1])
     opened_eye_lm68 = copy.deepcopy(lm68)
+    eye_area_percent = 0.6 * torch.ones([len(lm68), 1], dtype=opened_eye_lm68.dtype, device=opened_eye_lm68.device)
 
     eye_open_scale = (opened_eye_lm68[:, 41, 1] - opened_eye_lm68[:, 37, 1]) + (opened_eye_lm68[:, 40, 1] - opened_eye_lm68[:, 38, 1]) + (opened_eye_lm68[:, 47, 1] - opened_eye_lm68[:, 43, 1]) + (opened_eye_lm68[:, 46, 1] - opened_eye_lm68[:, 44, 1])
     eye_open_scale = eye_open_scale.abs()
@@ -93,10 +94,9 @@ def inject_blink_to_lm68(lm68):
     
     T = len(lm68)
     period = 100
-    blink_factor_lst = np.array([0.4, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.4]) # * 0.9
     # blink_factor_lst = np.array([0.4, 0.4, 0.6, 0.8, 1.0, 0.8, 0.6, 0.4, 0.4]) # * 0.9
-    # blink_factor_lst = np.array([0.4, 0.6, 0.8, 1.0, 0.8, 0.6, 0.4]) # * 0.9
-    # blink_factor_lst = np.array([0.1, 0.5, 0.7, 1.0, 0.7, 0.5, 0.1]) # * 0.9
+    # blink_factor_lst = np.array([0.4, 0.7, 0.8, 1.0, 0.8, 0.6, 0.4]) # * 0.9
+    blink_factor_lst = np.array([0.1, 0.5, 0.7, 1.0, 0.7, 0.5, 0.1]) # * 0.9
     dur = len(blink_factor_lst)
     for i in range(T):
         if (i + 25) % period == 0:
@@ -104,7 +104,8 @@ def inject_blink_to_lm68(lm68):
                 idx = i+j
                 blink_factor = blink_factor_lst[j]
                 lm68[idx, 36:48] = lm68[idx, 36:48] * (1-blink_factor) + closed_eye_lm68[idx, 36:48] * blink_factor
-    return lm68
+                eye_area_percent[idx] = 0.6 * (1-blink_factor) + 0.15 * blink_factor
+    return lm68, eye_area_percent
 
 
 class GeneFace2Infer:
@@ -383,9 +384,12 @@ class GeneFace2Infer:
             # idexp_lm3d_normalized = torch.clamp(idexp_lm3d_normalized, min=lower, max=upper)
 
         cano_lm3d = (idexp_lm3d_mean + idexp_lm3d_std * idexp_lm3d_normalized) / 10 + self.face3d_helper.key_mean_shape[index_lm68_from_lm478].unsqueeze(0)
+        eye_area_percent = 0.6 * torch.ones([len(cano_lm3d), 1], dtype=cano_lm3d.dtype, device=cano_lm3d.device)
+        
         if inp['blink_mode'] == 'period':
-            cano_lm3d = inject_blink_to_lm68(cano_lm3d)
+            cano_lm3d, eye_area_percent = inject_blink_to_lm68(cano_lm3d)
             print("Injected blink to idexp_lm3d by directly editting.")
+        batch['eye_area_percent'] = eye_area_percent
         idexp_lm3d_normalized = ((cano_lm3d - self.face3d_helper.key_mean_shape[index_lm68_from_lm478].unsqueeze(0)) * 10 - idexp_lm3d_mean) / idexp_lm3d_std
         idexp_lm3d_normalized = torch.clamp(idexp_lm3d_normalized, min=lower, max=upper)
         batch['cano_lm3d'] = cano_lm3d
@@ -424,13 +428,14 @@ class GeneFace2Infer:
         bg_color = batch['bg_img']
         poses = batch['poses']
         lm68s = batch['lm68']
-        
+        eye_area_percent = batch['eye_area_percent']
+
         pred_rgb_lst = []
         with torch.cuda.amp.autocast(enabled=True):
             # forward neural renderer
             for i in tqdm.trange(num_frames, desc="GeneFace++ is rendering... "):
                 model_out = self.secc2video_model.render(rays_o[i], rays_d[i], cond_inp[i], bg_coords, poses[i], index=i, staged=False, bg_color=bg_color, lm68=lm68s[i], perturb=False, force_all_rays=False,
-                                T_thresh=inp['raymarching_end_threshold'],
+                                T_thresh=inp['raymarching_end_threshold'], eye_area_percent=eye_area_percent[i],
                                 **hparams)
                 if self.secc2video_hparams.get('with_sr', False):
                     pred_rgb = model_out['sr_rgb_map'][0].cpu() # [c, h, w]

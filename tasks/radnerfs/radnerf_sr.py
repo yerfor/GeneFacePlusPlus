@@ -191,6 +191,7 @@ class RADNeRFTask(BaseTask):
         bg_coords = sample['bg_coords'] # [1, N, 2]
         poses = sample['pose'] # [B, 6]
         idx = sample['idx'] # [B]
+        eye_area_percent = sample['eye_area_percent'] # [B]
         bg_color = sample['bg_torso_img'] if 'bg_torso_img' in sample else sample['bg_img'] # treat torso as a part of background
         H, W = sample['H'], sample['W']
         cond_mask = sample.get('cond_mask', None)
@@ -198,7 +199,7 @@ class RADNeRFTask(BaseTask):
 
         if not infer:
             # training phase, sample rays from the image
-            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=True, force_all_rays=False, cond_mask=cond_mask,**hparams)
+            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=True, force_all_rays=False, cond_mask=cond_mask, eye_area_percent=eye_area_percent, **hparams)
             pred_rgb = model_out['rgb_map']
             losses_out = {}
             gt_rgb = sample['gt_img'].reshape([1,256,256,3]).permute(0, 3, 1, 2)
@@ -246,7 +247,7 @@ class RADNeRFTask(BaseTask):
             return losses_out, model_out
         else:
             # infer phase, generate the whole image
-            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=False, force_all_rays=True, cond_mask=cond_mask, **hparams)
+            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=False, force_all_rays=True, cond_mask=cond_mask, eye_area_percent=eye_area_percent, **hparams)
             # calculate val loss
             if 'gt_img' in sample:
                 gt_rgb = sample['gt_img'].reshape([1,256,256,3]).permute(0, 3, 1, 2)
