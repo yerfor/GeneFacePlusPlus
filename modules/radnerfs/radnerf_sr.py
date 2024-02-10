@@ -135,7 +135,7 @@ class RADNeRFwithSR(NeRFRenderer):
             blink_feat = self.blink_embedding(torch.tensor(0, device=cond_feat.device)).reshape([1, -1])
             blink_feat = blink_feat * eye_area_percent.reshape([1,1]).to(cond_feat.device)
             blink_feat = self.blink_encoder(blink_feat)
-            cond_feat[..., :hparams['eye_blink_dim']] = cond_feat[..., :hparams['eye_blink_dim']] + blink_feat.expand(cond_feat[..., :shparams['eye_blink_dim']].shape)
+            cond_feat[..., :hparams['eye_blink_dim']] = cond_feat[..., :hparams['eye_blink_dim']] + blink_feat.expand(cond_feat[..., :hparams['eye_blink_dim']].shape)
         if self.with_att:
             cond_feat = self.cond_att_net(cond_feat) # [1, 64] 
         return cond_feat
