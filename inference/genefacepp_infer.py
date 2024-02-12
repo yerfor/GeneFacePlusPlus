@@ -73,7 +73,7 @@ def vis_cano_lm3d_to_imgs(cano_lm3d, hw=512):
         frame_lst.append(img)
     return frame_lst
 
-def inject_blink_to_lm68(lm68):
+def inject_blink_to_lm68(lm68, opened_eye_area_percent=0.6, closed_eye_area_percent=0.15):
     # [T, 68, 2]
     # lm68[:,36:48] = lm68[0:1,36:48].repeat([len(lm68), 1, 1])
     opened_eye_lm68 = copy.deepcopy(lm68)
@@ -104,7 +104,7 @@ def inject_blink_to_lm68(lm68):
                 idx = i+j
                 blink_factor = blink_factor_lst[j]
                 lm68[idx, 36:48] = lm68[idx, 36:48] * (1-blink_factor) + closed_eye_lm68[idx, 36:48] * blink_factor
-                eye_area_percent[idx] = 0.6 * (1-blink_factor) + 0.15 * blink_factor
+                eye_area_percent[idx] = opened_eye_area_percent * (1-blink_factor) + closed_eye_area_percent * blink_factor
     return lm68, eye_area_percent
 
 
@@ -175,6 +175,9 @@ class GeneFace2Infer:
             load_ckpt(model, f"{head_model_dir}", model_name='model', strict=True)
         self.dataset_cls = RADNeRFDataset # the dataset only provides head pose 
         self.dataset = self.dataset_cls('trainval', training=False)
+        eye_area_percents = torch.tensor(self.dataset.eye_area_percents)
+        self.closed_eye_area_percent = torch.quantile(eye_area_percents, q=0.001).item()
+        self.opened_eye_area_percent = torch.quantile(eye_area_percents, q=0.95).item()
         model = torch.compile(model)
         return model
 
@@ -384,10 +387,10 @@ class GeneFace2Infer:
             # idexp_lm3d_normalized = torch.clamp(idexp_lm3d_normalized, min=lower, max=upper)
 
         cano_lm3d = (idexp_lm3d_mean + idexp_lm3d_std * idexp_lm3d_normalized) / 10 + self.face3d_helper.key_mean_shape[index_lm68_from_lm478].unsqueeze(0)
-        eye_area_percent = 0.6 * torch.ones([len(cano_lm3d), 1], dtype=cano_lm3d.dtype, device=cano_lm3d.device)
+        eye_area_percent = self.opened_eye_area_percent * torch.ones([len(cano_lm3d), 1], dtype=cano_lm3d.dtype, device=cano_lm3d.device)
         
         if inp['blink_mode'] == 'period':
-            cano_lm3d, eye_area_percent = inject_blink_to_lm68(cano_lm3d)
+            cano_lm3d, eye_area_percent = inject_blink_to_lm68(cano_lm3d, self.opened_eye_area_percent, self.closed_eye_area_percent)
             print("Injected blink to idexp_lm3d by directly editting.")
         batch['eye_area_percent'] = eye_area_percent
         idexp_lm3d_normalized = ((cano_lm3d - self.face3d_helper.key_mean_shape[index_lm68_from_lm478].unsqueeze(0)) * 10 - idexp_lm3d_mean) / idexp_lm3d_std
