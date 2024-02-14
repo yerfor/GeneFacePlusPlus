@@ -133,11 +133,11 @@ class RADNeRFTorsoTask(RADNeRFTask):
         idx = sample['idx'] # [B]
         bg_color = sample['bg_img']
         H, W = sample['H'], sample['W']
-
+        eye_area_percent = sample['eye_area_percent']
         cond_inp = cond_wins
 
         if not infer:
-            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=True, force_all_rays=False, upscale_torso=True, lm68=sample['lm68'], **hparams)
+            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=True, force_all_rays=False, upscale_torso=True, lm68=sample['lm68'], eye_area_percent=eye_area_percent, **hparams)
             # if hparams['torso_train_mode'] == 1:
             #     pred_rgb = model_out['torso_rgb_map'] 
             #     gt_rgb = sample['bg_torso_img'] # the target is bg_torso_img\
@@ -175,7 +175,7 @@ class RADNeRFTorsoTask(RADNeRFTask):
             
         else:
             # infer phase, generate the whole image
-            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=False, force_all_rays=True, lm68=sample['lm68'], **hparams)
+            model_out = self.model.render(rays_o, rays_d, cond_inp, bg_coords, poses, index=idx, staged=False, bg_color=bg_color, perturb=False, force_all_rays=True, lm68=sample['lm68'],eye_area_percent=eye_area_percent, **hparams)
             # calculate val loss
             if 'gt_img' in sample:
                 gt_rgb = sample['gt_img']
