@@ -1,4 +1,5 @@
 import os, sys
+sys.path.append('./')
 import argparse
 import gradio as gr
 from inference.genefacepp_infer import GeneFace2Infer
@@ -21,6 +22,7 @@ class Inferer(GeneFace2Infer):
             'postnet_ckpt',
             'head_ckpt',
             'torso_ckpt',
+            'low_memory_usage',
         ]
         inp = {}
         out_name = None
@@ -165,6 +167,7 @@ def genefacepp_demo(
                             mouth_amp = gr.Slider(minimum=0.0, maximum=1.0, step=0.025, label="mouth amplitude",  value=0.4, info='higher -> mouth will open wider, default to be 0.4',)
                             raymarching_end_threshold = gr.Slider(minimum=0.0, maximum=0.1, step=0.0025, label="ray marching end-threshold",  value=0.01, info='increase it to improve inference speed',)
                             fp16 = gr.Checkbox(label="Whether to utilize fp16 to speed up inference")
+                            low_memory_usage = gr.Checkbox(label="Low Memory Usage Mode: save memory at the expense of lower inference speed. Useful when running a low audio (minutes-long).", value=False)
                             
                             submit = gr.Button('Generate', elem_id="generate", variant='primary')
                         
@@ -199,6 +202,7 @@ def genefacepp_demo(
                         postnet_dir,
                         head_model_dir,
                         torso_model_dir,
+                        low_memory_usage
                     ], 
                     outputs=[
                         gen_video,

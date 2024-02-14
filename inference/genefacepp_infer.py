@@ -1,4 +1,7 @@
 import os
+import sys
+sys.path.append('./')
+
 import torch
 import torch.nn.functional as F
 import librosa
@@ -10,6 +13,7 @@ import tqdm
 import copy
 import cv2
 import uuid
+import traceback
 # common utils
 from utils.commons.hparams import hparams, set_hparams
 from utils.commons.tensor_utils import move_to_cuda, convert_to_np, convert_to_tensor
@@ -178,7 +182,10 @@ class GeneFace2Infer:
         eye_area_percents = torch.tensor(self.dataset.eye_area_percents)
         self.closed_eye_area_percent = torch.quantile(eye_area_percents, q=0.001).item()
         self.opened_eye_area_percent = torch.quantile(eye_area_percents, q=0.95).item()
-        model = torch.compile(model)
+        try:
+            model = torch.compile(model)
+        except:
+            traceback.print_exc()
         return model
 
     def infer_once(self, inp):
@@ -434,42 +441,69 @@ class GeneFace2Infer:
         eye_area_percent = batch['eye_area_percent']
 
         pred_rgb_lst = []
-        with torch.cuda.amp.autocast(enabled=True):
-            # forward neural renderer
-            for i in tqdm.trange(num_frames, desc="GeneFace++ is rendering... "):
-                model_out = self.secc2video_model.render(rays_o[i], rays_d[i], cond_inp[i], bg_coords, poses[i], index=i, staged=False, bg_color=bg_color, lm68=lm68s[i], perturb=False, force_all_rays=False,
-                                T_thresh=inp['raymarching_end_threshold'], eye_area_percent=eye_area_percent[i],
-                                **hparams)
-                if self.secc2video_hparams.get('with_sr', False):
-                    pred_rgb = model_out['sr_rgb_map'][0].cpu() # [c, h, w]
-                else:
-                    pred_rgb = model_out['rgb_map'][0].reshape([512,512,3]).permute(2,0,1).cpu()
 
-                pred_rgb_lst.append(pred_rgb)
-        pred_rgbs = torch.stack(pred_rgb_lst).cpu()
-        pred_rgbs = pred_rgbs * 2 - 1 # to -1~1 scale
+        # forward renderer
+        if inp['low_memory_usage']:
+            # save memory, when one image is rendered, write it into video
+            try:
+                os.makedirs(os.path.dirname(inp['out_name']), exist_ok=True)
+            except: pass
+            import imageio
+            tmp_out_name = inp['out_name'].replace(".mp4", ".tmp.mp4")
+            writer = imageio.get_writer(tmp_out_name, fps = 25, format='FFMPEG', codec='h264')
 
-        if inp['debug']:
-            # prepare for output
-            drv_secc_colors = batch['drv_secc']
-            secc_img = torch.cat([torch.nn.functional.interpolate(drv_secc_colors[i:i+1], (512,512)) for i in range(num_frames)]).cpu()
-            cano_lm3d_frame_lst = vis_cano_lm3d_to_imgs(batch['cano_lm3d'], hw=512)
-            cano_lm3d_frames = convert_to_tensor(np.stack(cano_lm3d_frame_lst)).permute(0, 3, 1, 2) / 127.5 - 1
-            imgs = torch.cat([pred_rgbs, cano_lm3d_frames, secc_img], dim=3) # [B, C, H, W]
+            with torch.cuda.amp.autocast(enabled=True):
+                # forward neural renderer
+                for i in tqdm.trange(num_frames, desc="GeneFace++ is rendering... "):
+                    model_out = self.secc2video_model.render(rays_o[i], rays_d[i], cond_inp[i], bg_coords, poses[i], index=i, staged=False, bg_color=bg_color, lm68=lm68s[i], perturb=False, force_all_rays=False,
+                                    T_thresh=inp['raymarching_end_threshold'], eye_area_percent=eye_area_percent[i],
+                                    **hparams)
+                    if self.secc2video_hparams.get('with_sr', False):
+                        pred_rgb = model_out['sr_rgb_map'][0].cpu() # [c, h, w]
+                    else:
+                        pred_rgb = model_out['rgb_map'][0].reshape([512,512,3]).permute(2,0,1).cpu()
+                    img = (pred_rgb.permute(1,2,0) * 255.).int().cpu().numpy().astype(np.uint8)
+                    writer.append_data(img)
+            writer.close()
+
         else:
-            imgs = pred_rgbs
-        imgs = imgs.clamp(-1,1)
 
-        try:
-            os.makedirs(os.path.dirname(inp['out_name']), exist_ok=True)
-        except: pass
-        import imageio
-        tmp_out_name = inp['out_name'].replace(".mp4", ".tmp.mp4")
-        out_imgs = ((imgs.permute(0, 2, 3, 1) + 1)/2 * 255).int().cpu().numpy().astype(np.uint8)
-        writer = imageio.get_writer(tmp_out_name, fps = 25, format='FFMPEG', codec='h264')
-        for i in tqdm.trange(len(out_imgs), desc=f"ImageIO is saving video using FFMPEG(h264) to {tmp_out_name}"):
-            writer.append_data(out_imgs[i])
-        writer.close()
+            with torch.cuda.amp.autocast(enabled=True):
+                # forward neural renderer
+                for i in tqdm.trange(num_frames, desc="GeneFace++ is rendering... "):
+                    model_out = self.secc2video_model.render(rays_o[i], rays_d[i], cond_inp[i], bg_coords, poses[i], index=i, staged=False, bg_color=bg_color, lm68=lm68s[i], perturb=False, force_all_rays=False,
+                                    T_thresh=inp['raymarching_end_threshold'], eye_area_percent=eye_area_percent[i],
+                                    **hparams)
+                    if self.secc2video_hparams.get('with_sr', False):
+                        pred_rgb = model_out['sr_rgb_map'][0].cpu() # [c, h, w]
+                    else:
+                        pred_rgb = model_out['rgb_map'][0].reshape([512,512,3]).permute(2,0,1).cpu()
+
+                    pred_rgb_lst.append(pred_rgb)
+            pred_rgbs = torch.stack(pred_rgb_lst).cpu()
+            pred_rgbs = pred_rgbs * 2 - 1 # to -1~1 scale
+
+            if inp['debug']:
+                # prepare for output
+                drv_secc_colors = batch['drv_secc']
+                secc_img = torch.cat([torch.nn.functional.interpolate(drv_secc_colors[i:i+1], (512,512)) for i in range(num_frames)]).cpu()
+                cano_lm3d_frame_lst = vis_cano_lm3d_to_imgs(batch['cano_lm3d'], hw=512)
+                cano_lm3d_frames = convert_to_tensor(np.stack(cano_lm3d_frame_lst)).permute(0, 3, 1, 2) / 127.5 - 1
+                imgs = torch.cat([pred_rgbs, cano_lm3d_frames, secc_img], dim=3) # [B, C, H, W]
+            else:
+                imgs = pred_rgbs
+            imgs = imgs.clamp(-1,1)
+
+            try:
+                os.makedirs(os.path.dirname(inp['out_name']), exist_ok=True)
+            except: pass
+            import imageio
+            tmp_out_name = inp['out_name'].replace(".mp4", ".tmp.mp4")
+            out_imgs = ((imgs.permute(0, 2, 3, 1) + 1)/2 * 255).int().cpu().numpy().astype(np.uint8)
+            writer = imageio.get_writer(tmp_out_name, fps = 25, format='FFMPEG', codec='h264')
+            for i in tqdm.trange(len(out_imgs), desc=f"ImageIO is saving video using FFMPEG(h264) to {tmp_out_name}"):
+                writer.append_data(out_imgs[i])
+            writer.close()
 
         cmd = f"ffmpeg -i {tmp_out_name} -i {self.wav16k_name} -y -shortest -c:v libx264 -pix_fmt yuv420p -b:v 2000k -y -v quiet -shortest {inp['out_name']}"
         ret = os.system(cmd)
@@ -529,6 +563,8 @@ if __name__ == '__main__':
     parser.add_argument("--debug", action='store_true') 
     parser.add_argument("--fast", action='store_true') 
     parser.add_argument("--out_name", default='tmp.mp4') 
+    parser.add_argument("--low_memory_usage", action='store_true', help='write img to video upon generated, leads to slower fps, but use less memory')
+
 
     args = parser.parse_args()
 
@@ -545,7 +581,8 @@ if __name__ == '__main__':
             'lle_percent': float(args.lle_percent),
             'debug': args.debug,
             'out_name': args.out_name,
-            'raymarching_end_threshold': args.raymarching_end_threshold
+            'raymarching_end_threshold': args.raymarching_end_threshold,
+            'low_memory_usage': args.low_memory_usage,
             }
     if args.fast:
         inp['raymarching_end_threshold'] = 0.05
