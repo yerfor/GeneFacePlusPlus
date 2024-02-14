@@ -278,11 +278,12 @@ class GeneFace2Infer:
         hubert = get_hubert_from_16k_wav(wav16k_name).detach().numpy()
         len_mel = hubert.shape[0]
         x_multiply = 8
-        if len_mel % x_multiply == 0:
-            num_to_pad = 0
-        else:
-            num_to_pad = x_multiply - len_mel % x_multiply
-        hubert = np.pad(hubert, pad_width=((0,num_to_pad), (0,0)))
+        hubert = hubert[:len(hubert)//8*8]
+        # if len_mel % x_multiply == 0:
+        #     num_to_pad = 0
+        # else:
+        #     num_to_pad = x_multiply - len_mel % x_multiply
+        # hubert = np.pad(hubert, pad_width=((0,num_to_pad), (0,0)))
         return hubert
 
     def get_f0(self, wav16k_name):
