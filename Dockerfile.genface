@@ -3,27 +3,25 @@ FROM ubuntu22.04-cu118-conda:torch2.0.1-py39
 # Make RUN commands use the new environment:
 SHELL ["conda", "run", "-n", "pytorch", "/bin/bash", "-c"]
 
-#RUN . ~/.bashrc && conda activate pytorch
-
 RUN conda install conda-forge::ffmpeg # ffmpeg with libx264 codec to turn images to video
 
-# 我们推荐安装torch2.0.1+cuda11.7. 已经发现 torch=2.1+cuda12.1 会导致 torch-ngp 错误
+# torch2.0.1+cuda11.8 is recommended , cuda11.8 is compatible with RTX 4090.
+# And torch=2.1+cuda12.1 will cause error of torch-ngp 
 #conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.8 -c pytorch -c nvidia
 
-# 从源代码安装，需要比较长的时间 (如果遇到各种time-out问题，建议使用代理)
+# install mmcv by mim
 RUN pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable" && \
-    # MMCV安装 \
     pip install cython openmim==0.3.9 && \ 
-    mim install mmcv==2.1.0 # 使用mim来加速mmcv安装  
+    mim install mmcv==2.1.0 
 
 COPY . /workspace
 WORKDIR /workspace
 
-# 其他依赖项
+# other dependencies
 RUN apt update -y && apt-get install -y libasound2-dev portaudio19-dev libgl1 && \
     pip install -r docs/prepare_env/requirements.txt -v
 
 
-# 构建torch-ngp
+# install torch-ngp extension
 RUN bash docs/prepare_env/install_ext.sh 
 
