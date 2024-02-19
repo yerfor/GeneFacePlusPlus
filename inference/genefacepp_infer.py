@@ -106,7 +106,7 @@ def inject_blink_to_lm68(lm68, opened_eye_area_percent=0.6, closed_eye_area_perc
         if (i + 25) % period == 0:
             for j in range(dur):
                 idx = i+j
-                if idx > len(T) - 1: # prevent out of index error
+                if idx > T - 1: # prevent out of index error
                     break
                 blink_factor = blink_factor_lst[j]
                 lm68[idx, 36:48] = lm68[idx, 36:48] * (1-blink_factor) + closed_eye_lm68[idx, 36:48] * blink_factor

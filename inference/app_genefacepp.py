@@ -223,6 +223,7 @@ if __name__ == "__main__":
     parser.add_argument("--head_ckpt", type=str, default='')
     parser.add_argument("--torso_ckpt", type=str, default='checkpoints/motion2video_nerf/may_torso/model_ckpt_steps_250000.ckpt') 
     parser.add_argument("--port", type=int, default=None) 
+    parser.add_argument("--server", type=str, default='127.0.0.1') 
 
     args = parser.parse_args()
     demo = genefacepp_demo(
@@ -234,6 +235,6 @@ if __name__ == "__main__":
         warpfn=None,
     )
     demo.queue()
-    demo.launch(server_port=args.port)
+    demo.launch(server_name=args.server, server_port=args.port)
 
 
