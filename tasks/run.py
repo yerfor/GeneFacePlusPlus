@@ -21,6 +21,8 @@ def clear_gpus():
         os.system(f'pkill -f "voidgpu{d}"')
 
 if __name__ == '__main__':
+    if os.environ.get('CUDA_VISIBLE_DEVICES', '') == '':
+        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     try:
         set_hparams()
         run_task()
