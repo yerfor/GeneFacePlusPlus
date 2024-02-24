@@ -200,7 +200,8 @@ def load_processed_data(processed_dir):
     assert os.path.exists(background_img_name)
     head_img_dir = os.path.join(processed_dir, "head_imgs")
     torso_img_dir = os.path.join(processed_dir, "inpaint_torso_imgs")
-    gt_img_dir = os.path.join(processed_dir, "gt_imgs")
+    gt_img_dir = os.path.join(processed_dir, "com_imgs")
+    # gt_img_dir = os.path.join(processed_dir, "gt_imgs")
 
     hubert_npy_name = os.path.join(processed_dir, "aud_hubert.npy")
     mel_f0_npy_name = os.path.join(processed_dir, "aud_mel_f0.npy")

@@ -24,4 +24,4 @@ lpips_start_iters: 20_0000
 num_updates: 25_0000
 clip_grad_norm: 0. # 1. in fp16 leads to nan
 add_eye_blink_cond: true # to better control eye blink
-eye_blink_dim: 8
+eye_blink_dim: 4
