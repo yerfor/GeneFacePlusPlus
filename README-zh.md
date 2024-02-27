@@ -49,6 +49,8 @@ python inference/genefacepp_infer.py --a2m_ckpt=checkpoints/audio2motion_vae --h
 export PYTHONPATH=./
 python inference/app_genefacepp.py --a2m_ckpt=checkpoints/audio2motion_vae --head_ckpt= --torso_ckpt=checkpoints/motion2video_nerf/may_torso
 ```
+  - 抑或可以使用我们提供的[Google Colab](https://colab.research.google.com/github/yerfor/GeneFacePlusPlus/blob/main/inference/genefacepp_demo.ipynb)，运行其中的所有cell。
+
 ## 在自己的视频上训练GeneFace++
 如果您想在您自己的目标人物视频上训练GeneFace++，请遵循 `docs/process_data`和`docs/train_and_infer/`中的步骤。
 
@@ -57,6 +59,7 @@ python inference/app_genefacepp.py --a2m_ckpt=checkpoints/audio2motion_vae --hea
 - [x] **Release Pre-trained weights of Audio2Motion and Motion2Video.**
 - [x] **Release Training Code of Motino2Video Renderer.**
 - [x] **Release Gradio Demo.**
+- [x] **Release Google Colab.**
 - [ ] **Release Training Code of Audio2Motion and Post-Net.**
 
 ## 引用
