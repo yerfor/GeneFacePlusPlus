@@ -525,14 +525,14 @@ class Trainer:
         current = None
         if logs is not None and self.monitor_key in logs:
             current = logs[self.monitor_key]
-        if current is not None and self.save_best:
-            if monitor_op(current, self.best_val_results):
-                best_filepath = f'{self.work_dir}/model_ckpt_best.pt'
-                self.best_val_results = current
-                logging.info(
-                    f'Epoch {epoch:05d}@{self.global_step}: {self.monitor_key} reached {current:0.5f}. '
-                    f'Saving model to {best_filepath}')
-                self._atomic_save(best_filepath)
+        # if current is not None and self.save_best:
+        #     if monitor_op(current, self.best_val_results):
+        #         best_filepath = f'{self.work_dir}/model_ckpt_best.pt'
+        #         self.best_val_results = current
+        #         logging.info(
+        #             f'Epoch {epoch:05d}@{self.global_step}: {self.monitor_key} reached {current:0.5f}. '
+        #             f'Saving model to {best_filepath}')
+        #         self._atomic_save(best_filepath)
 
     def _atomic_save(self, filepath):
         checkpoint = self.dump_checkpoint()
