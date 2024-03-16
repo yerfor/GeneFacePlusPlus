@@ -4,7 +4,7 @@
 我们提供预训练好的Audio2Motion模型（在voxceleb2,一个2000小时的英文数据集上训练）。你可以从[Google Drive](https://drive.google.com/drive/folders/1FqvNbQgOSkvVO8i-vCDJmKM4ppPZjUpL?usp=sharing) 或 [BaiduYun Disk](https://pan.baidu.com/s/19UZxMrO-ZvkOeYzUkOKsTQ?pwd=9cqp) (密码 9cqp) 下载预训练的Audio2Motion模型，并将模型放在 `checkpoints/audio2motion_vae`里。
 
 # Train Motion2Video Renderer
-你需要先遵循 `docs/prepare_data/guide.md` 的步骤来获得预处理后的数据集，并且你可以找到一个二进制化的 `.npy` 文件 `data/binary/videos/{Video_ID}/trainval_dataset.npy` (Video_ID 是目标的人物名字, 这里我们指定 `May` 作为例子.)
+你需要先遵循 `docs/process_data/guide.md` 的步骤来获得预处理后的数据集，并且你可以找到一个二进制化的 `.npy` 文件 `data/binary/videos/{Video_ID}/trainval_dataset.npy` (Video_ID 是目标的人物名字, 这里我们指定 `May` 作为例子.)
 
 ```
 # 训练 Head NeRF 模型
