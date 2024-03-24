@@ -161,7 +161,8 @@ def genefacepp_demo(
                         gr.Markdown("need help? please visit our [best practice page](https://baidu.com) for more detials")
                         with gr.Column(variant='panel'):
 
-                            blink_mode = gr.Radio(['none', 'period'], value='period', label='blink mode', info="whether to blink periodly")       
+                            blink_mode = gr.Radio(['none', 'period'], value='none', label='blink mode', info="whether to blink periodly")       
+                            # blink_mode = gr.Radio(['none', 'period'], value='period', label='blink mode', info="whether to blink periodly")       
                             lle_percent = gr.Slider(minimum=0.0, maximum=1.0, step=0.025, label="lle_percent",  value=0.0, info='higher-> drag pred.landmark closer to the training video\'s landmark set',)
                             temperature = gr.Slider(minimum=0.0, maximum=1.0, step=0.025, label="temperature",  value=0.0, info='audio to secc temperature',)
                             mouth_amp = gr.Slider(minimum=0.0, maximum=1.0, step=0.025, label="mouth amplitude",  value=0.4, info='higher -> mouth will open wider, default to be 0.4',)
