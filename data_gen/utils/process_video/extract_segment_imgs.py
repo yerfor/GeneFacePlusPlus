@@ -308,7 +308,7 @@ def extract_segment_job(
         if "cuda" in device:
             # determine which cuda index from subprocess id
             pname = multiprocessing.current_process().name
-            pid = int(pname.rsplit("-", 1)[-1]) - 1
+            pid = 0 if pname == "MainProcess" else int(pname.rsplit("-", 1)[-1]) - 1
             cuda_id = pid % total_gpus
             device = f"cuda:{cuda_id}"
 
