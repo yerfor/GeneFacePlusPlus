@@ -97,12 +97,13 @@ class MediapipeLandmarker:
             try:
                 img_ldm_i = img_face_landmarker_result.face_landmarks[0]
                 vid_ldm_i = vid_face_landmarker_result.face_landmarks[0]
+                img_face_landmarks = np.array([[l.x, l.y, l.z] for l in img_ldm_i])
+                vid_face_landmarks = np.array([[l.x, l.y, l.z] for l in vid_ldm_i])
+                img_mpldms.append(img_face_landmarks)
+                vid_mpldms.append(vid_face_landmarks)
             except:
                 print(f"Warning: failed detect ldm in idx={i}, use previous frame results.")
-            img_face_landmarks = np.array([[l.x, l.y, l.z] for l in img_ldm_i])
-            vid_face_landmarks = np.array([[l.x, l.y, l.z] for l in vid_ldm_i])
-            img_mpldms.append(img_face_landmarks)
-            vid_mpldms.append(vid_face_landmarks)
+
         img_lm478 = np.stack(img_mpldms)[..., :2]
         vid_lm478 = np.stack(vid_mpldms)[..., :2]
         bs, H, W, _ = frames.shape
