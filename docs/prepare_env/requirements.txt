@@ -60,7 +60,7 @@ s3prl
 fire
 
 # cal LMD
-dlib
+dlib==19.24.2
 
 # debug
 ipykernel
