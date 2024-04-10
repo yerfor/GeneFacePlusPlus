@@ -1,4 +1,4 @@
-#Docker installation notes
+# Docker installation notes
 
 It would be much easier to install the application in a docker container.
 Here the basic steps to run the application in Docker.
