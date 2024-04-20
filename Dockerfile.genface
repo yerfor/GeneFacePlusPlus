@@ -11,7 +11,7 @@ RUN conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-c
 
 # install mmcv by mim
 RUN pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable" && \
-    pip install cmake chardet cython openmim==0.3.9 && \ 
+    pip install chardet cython openmim==0.3.9 && \ 
     mim install mmcv==2.1.0 
 
 COPY . /workspace
