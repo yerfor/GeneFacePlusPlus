@@ -7,7 +7,7 @@ RUN conda install conda-forge::ffmpeg # ffmpeg with libx264 codec to turn images
 
 # torch2.0.1+cuda11.8 is recommended , cuda11.8 is compatible with RTX 4090.
 # And torch=2.1+cuda12.1 will cause error of torch-ngp 
-RUN conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.8 -c pytorch -c nvidia
+RUN conda install cmake pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.8 -c pytorch -c nvidia
 
 # install mmcv by mim
 RUN pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable" && \
