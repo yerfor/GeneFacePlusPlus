@@ -56,7 +56,7 @@ Or use our provided [Google Colab](https://colab.research.google.com/github/yerf
 Please refer to details in  `docs/process_data` and `docs/train_and_infer`.
 
 Below are answers to frequently asked questions when training GeneFace++ on custom videos:
-- Please make sure that the head segment occupies a relatively large region in the video (e.g., similar to the provided `May.mp4`). Or you need to hand-crop your training video. [issue](https://github.com/yerfor/GeneFacePlusPlus/issues/30)
+- Please make sure that the head segment occupies a relatively large region in the video (e.g., similar to the provided `May.mp4` located at `/data/raw/videos/May.mp4`). Or you need to hand-crop your training video. [issue](https://github.com/yerfor/GeneFacePlusPlus/issues/30)
 - Make sure that the talking person appears in every frame of the video, otherwise the data preprocessing pipeline may be failed.
 - We only tested our code on Liunx (Ubuntu/CentOS). It is welcome that someone who are willing to share their installation guide on Windows/MacOS.
 
