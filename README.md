@@ -10,8 +10,8 @@ This is the official implementation of GeneFace++ [Paper](https://arxiv.org/abs/
     <br>
 </p>
 
-# Note
-The eye blink control is an experimental feature, and we are currently working on improving its robustness. Thanks for your patience.
+# 🔥MimicTalk Released
+**We have released the code of MimicTalk ([https://github.com/yerfor/MimicTalk/](https://github.com/yerfor/MimicTalk/)), which is a SOTA NeRF-based person-specific talking face method and achieves better visual quality and enables talking style control.**
 
 ## You may also interested in 
 - We release Real3D-portrait (ICLR 2024 Spotlight), ([https://github.com/yerfor/Real3DPortrait](https://github.com/yerfor/Real3DPortrait)), a NeRF-based one-shot talking face system. Only upload one image and enjoy realistic talking face!
